@@ -3,7 +3,7 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport">
 <title>Docmerge · Batch PDFs</title>
 
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%230ea5e9'/%3E%3Cstop offset='50%25' stop-color='%23ec4899'/%3E%3Cstop offset='100%25' stop-color='%238b5cf6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Cpath d='M18 16h20c1.1 0 2 .9 2 2v4H16v-4c0-1.1.9-2 2-2zm-2 10h28v22c0 1.1-.9 2-2 2H18c-1.1 0-2-.9-2-2V26zm6 4v3h16v-3H22zm0 7v3h12v-3H22z' fill='white'/%3E%3C/svg%3E" type="image/svg+xml">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23f59e0b'/%3E%3Cstop offset='100%25' stop-color='%23d97706'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23bg)'/%3E%3Cg fill='%231c1917'%3E%3Cellipse cx='32' cy='34' rx='18' ry='16'/%3E%3Cpath d='M18 22 Q14 12 20 14 Q24 16 22 22'/%3E%3Cpath d='M46 22 Q50 12 44 14 Q40 16 42 22'/%3E%3Ccircle cx='26' cy='32' r='2.5' fill='%23fef3c7'/%3E%3Ccircle cx='38' cy='32' r='2.5' fill='%23fef3c7'/%3E%3Ccircle cx='26' cy='32' r='1.2' fill='%23000'/%3E%3Ccircle cx='38' cy='32' r='1.2' fill='%23000'/%3E%3Cellipse cx='32' cy='38' rx='3' ry='2' fill='%233f3f46'/%3E%3Cpath d='M29 41 Q32 44 35 41' stroke='%233f3f46' stroke-width='1.2' fill='none'/%3E%3Ccircle cx='22' cy='28' r='1.8' fill='%23fbbf24'/%3E%3Ccircle cx='42' cy='28' r='1.8' fill='%23fbbf24'/%3E%3Ccircle cx='28' cy='24' r='1.5' fill='%23fbbf24'/%3E%3Ccircle cx='36' cy='24' r='1.5' fill='%23fbbf24'/%3E%3Ccircle cx='32' cy='46' r='1.6' fill='%23fbbf24'/%3E%3C/g%3E%3C/svg%3E" type="image/svg+xml">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -348,7 +348,7 @@
   .status-counts { font-size: 0.78rem; color: var(--muted); }
 
   /* ===== LAYOUT ===== */
-  .layout { display: flex; gap: 0; align-items: flex-start; padding: 20px 24px 70px; }
+  .layout { display: flex; gap: 0; align-items: flex-start; padding: 16px 24px 20px; }
 
   /* ===== SIDEBAR ===== */
   .sidebar {
@@ -569,19 +569,58 @@
     text-align: right; font-weight: 700;
   }
 
-  /* Description */
+  /* Description — fills remaining screen (no empty gap below) */
   #descInput {
-    width: 100%; min-height: 420px;
-    border: 2px solid #a5d8ff; border-radius: 14px;
-    padding: 15px 17px; font-size: 0.94rem; font-family: inherit;
-    line-height: 1.65; resize: vertical;
+    width: 100%;
+    min-height: 420px;
+    height: calc(100vh - 340px);
+    max-height: none;
+    border: 2px solid #a5d8ff;
+    border-radius: 14px;
+    padding: 16px 18px;
+    font-size: 11pt;
+    font-family: Arial, Helvetica, sans-serif;
+    line-height: 1.55;
     transition: border-color 0.2s, box-shadow 0.2s;
-    background: rgba(255,255,255,0.95);
+    background: #fff;
+    color: #202124;
+    outline: none;
+    overflow-y: auto;
+    overflow-x: hidden;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    box-sizing: border-box;
   }
   #descInput:focus {
-    outline: none; border-color: #0ea5e9;
+    border-color: #0ea5e9;
     box-shadow: 0 0 0 4px rgba(14,165,233,0.15);
   }
+  #descInput.is-empty:before {
+    content: attr(data-placeholder);
+    color: #9aa0a6;
+    pointer-events: none;
+    display: block;
+  }
+  /* Pasted content should fill full width like Google Docs */
+  #descInput > * {
+    max-width: 100% !important;
+    width: auto !important;
+    box-sizing: border-box;
+  }
+  #descInput div, #descInput p, #descInput span, #descInput section, #descInput article {
+    max-width: 100% !important;
+  }
+  #descInput h1 { font-size: 24pt; font-weight: 700; margin: 0 0 12px; line-height: 1.25; }
+  #descInput h2 { font-size: 16pt; font-weight: 700; margin: 16px 0 8px; line-height: 1.3; }
+  #descInput h3 { font-size: 13pt; font-weight: 700; margin: 12px 0 6px; }
+  #descInput p { margin: 0 0 10px; }
+  #descInput ul, #descInput ol { margin: 0 0 10px; padding-left: 28px; }
+  #descInput li { margin-bottom: 4px; }
+  #descInput b, #descInput strong { font-weight: 700; }
+  #descInput i, #descInput em { font-style: italic; }
+  #descInput u { text-decoration: underline; }
+  #descInput img { max-width: 100%; height: auto; }
+  #descInput table { max-width: 100%; border-collapse: collapse; }
 
   .field-hint { display: none; }
 
@@ -1144,25 +1183,6 @@
   </div>
 </div>
 
-<div class="status-wrap">
-  <div class="status-card">
-    <div class="status-top">
-      <div class="title" id="batchHeadline">Batch not run yet</div>
-      <div class="meta" id="batchMeta">0 replacements · 0ms elapsed</div>
-    </div>
-    <div class="status-row">
-      <div class="chips" id="stepChips">
-        <span class="chip-step" data-step="queued">Queued</span>
-        <span class="chip-step" data-step="processing">Processing</span>
-        <span class="chip-step" data-step="generating">Generating PDFs</span>
-        <span class="chip-step" data-step="zipping">Preparing</span>
-        <span class="chip-step" data-step="ready">Ready</span>
-      </div>
-      <div class="status-counts" id="statusCounts">0/0 generated · 0 failed</div>
-    </div>
-  </div>
-</div>
-
 <div class="layout">
   <div class="sidebar">
     <div class="step">
@@ -1177,10 +1197,7 @@
           <input placeholder="replace with" type="text" value="copa airlines">
           <button onclick="this.parentElement.remove()">✕</button>
         </div>
-      <div class="word-row">
-    <input type="text" placeholder="find" value="americas air">
-    <input type="text" placeholder="replace with" value="copa airlines">
-    <button onclick="this.parentElement.remove()">✕</button></div></div>
+      </div>
       <button class="link-btn" onclick="addWordRow()">+ Add another word</button>
       <button class="full-btn outline" onclick="applyWordReplace()">Replace</button>
       <div class="hint-small" id="wordStatus">Set the words above, then hit Replace to apply the swap.</div>
@@ -1208,6 +1225,18 @@
     <div class="step">
       <div class="step-head">
         <span class="step-num">4</span>
+        <span class="step-title">Sequential Prefix</span>
+        <span class="step-optional">— Optional</span>
+      </div>
+      <input id="namePrefix" placeholder="e.g. xyz  →  xyz01, xyz02, xyz03..." type="text">
+      <div class="hint-small" id="prefixHint" style="display:block; margin-top:6px; font-size:0.72rem; color:var(--muted);">
+        Prefix diya to Output Names ignore hokar <b>prefix01, prefix02...</b> banenge
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-head">
+        <span class="step-num">5</span>
         <span class="step-title">Replacement Names</span>
       </div>
       <textarea id="replacementNames" placeholder="Copa
@@ -1216,7 +1245,7 @@ Delta"></textarea>
 
     <div class="step">
       <div class="step-head">
-        <span class="step-num">5</span>
+        <span class="step-num">6</span>
         <span class="step-title">Output PDF Names</span>
       </div>
       <textarea id="outputNames" placeholder="copa-certificate
@@ -1234,6 +1263,10 @@ delta-certificate"></textarea>
         <div class="field-head-left">
           <span class="step-num">1</span>
           <span class="field-title">Title &amp; Description</span>
+          <button type="button" class="link-btn" id="moveToDocsBtn" onclick="moveToDocs()"
+            style="margin-left:10px; padding:5px 12px; border:1px solid #7dd3fc; border-radius:8px; background:#e0f2fe; font-size:0.75rem;">
+            📄 Move to Docs
+          </button>
         </div>
 
         <div class="toolbar">
@@ -1260,9 +1293,9 @@ delta-certificate"></textarea>
 
           <div class="sep"></div>
 
-          <button type="button" id="btnBold" onclick="toggleFormat(this)" title="Bold"><b>B</b></button>
-          <button type="button" id="btnItalic" onclick="toggleFormat(this)" title="Italic"><i>I</i></button>
-          <button type="button" id="btnUnderline" onclick="toggleFormat(this)" title="Underline"><u>U</u></button>
+          <button type="button" id="btnBold" onmousedown="event.preventDefault(); toggleFormat(this)" title="Bold"><b>B</b></button>
+          <button type="button" id="btnItalic" onmousedown="event.preventDefault(); toggleFormat(this)" title="Italic"><i>I</i></button>
+          <button type="button" id="btnUnderline" onmousedown="event.preventDefault(); toggleFormat(this)" title="Underline"><u>U</u></button>
 
           <div class="sep"></div>
 
@@ -1287,7 +1320,9 @@ delta-certificate"></textarea>
         <span class="pt-label" id="titleFontLabel">20pt</span>
       </div>
 
-      <textarea id="descInput" oninput="livePreview()" placeholder="Exactly what you paste here is exactly what appears in every PDF."></textarea>
+      <div id="descInput" contenteditable="true" spellcheck="true"
+           data-placeholder="Exactly what you paste here is exactly what appears in every PDF."
+           oninput="livePreview(); touchSaved();"></div>
     </div>
 
     <div class="field-card" style="text-align:center;">
@@ -1323,15 +1358,42 @@ const VALID_CREDENTIALS = [
 
 const LOGIN_STORAGE_KEY = "docmerge_logged_in";
 
+/* Safe storage — works even when localStorage is blocked (sandbox / file://) */
+const _memStore = {};
+function safeGetItem(key) {
+  try {
+    if (typeof localStorage !== 'undefined') return localStorage.getItem(key);
+  } catch (e) { /* sandboxed */ }
+  return _memStore[key] != null ? _memStore[key] : null;
+}
+function safeSetItem(key, value) {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(key, value);
+      return;
+    }
+  } catch (e) { /* sandboxed */ }
+  _memStore[key] = String(value);
+}
+function safeRemoveItem(key) {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(key);
+      return;
+    }
+  } catch (e) { /* sandboxed */ }
+  delete _memStore[key];
+}
+
 function isLoggedIn() {
-  return localStorage.getItem(LOGIN_STORAGE_KEY) === "true";
+  return safeGetItem(LOGIN_STORAGE_KEY) === "true";
 }
 
 function setLoggedIn(value) {
   if (value) {
-    localStorage.setItem(LOGIN_STORAGE_KEY, "true");
+    safeSetItem(LOGIN_STORAGE_KEY, "true");
   } else {
-    localStorage.removeItem(LOGIN_STORAGE_KEY);
+    safeRemoveItem(LOGIN_STORAGE_KEY);
   }
 }
 
@@ -1352,6 +1414,7 @@ function createEmptyState(name) {
     originalName: '',
     replacementNames: '',
     outputNames: '',
+    namePrefix: '',
     numberTargets: '',
     wordRows: [{ find: '', replace: '' }],
     generatedFiles: []
@@ -1382,11 +1445,12 @@ function getCurrentState() {
   return {
     tabName: prevName,
     title: (document.getElementById('titleInput') || {}).value || '',
-    desc: (document.getElementById('descInput') || {}).value || '',
+    desc: getDescText(),
     titleFontSize: (document.getElementById('titleFontSize') || {}).value || '20',
     originalName: (document.getElementById('originalName') || {}).value || '',
     replacementNames: (document.getElementById('replacementNames') || {}).value || '',
     outputNames: (document.getElementById('outputNames') || {}).value || '',
+    namePrefix: (document.getElementById('namePrefix') || {}).value || '',
     numberTargets: (document.getElementById('numberTargets') || {}).value || '',
     wordRows: wordRows.length ? wordRows : [{ find: '', replace: '' }],
     generatedFiles: (typeof generatedFiles !== 'undefined' && Array.isArray(generatedFiles)) ? generatedFiles.slice() : []
@@ -1400,11 +1464,12 @@ function applyState(state) {
     if (el) el.value = (val != null) ? val : '';
   };
   setVal('titleInput', state.title);
-  setVal('descInput', state.desc);
+  setDescText(state.desc || '');
   setVal('titleFontSize', state.titleFontSize || '20');
   setVal('originalName', state.originalName);
   setVal('replacementNames', state.replacementNames);
   setVal('outputNames', state.outputNames);
+  setVal('namePrefix', state.namePrefix);
   setVal('numberTargets', state.numberTargets);
 
   var container = document.getElementById('wordRows');
@@ -1634,15 +1699,18 @@ let docsSaveStatusTimer = null;
 
 function loadDocsFromStorage() {
   try {
-    const raw = localStorage.getItem(DOCS_STORAGE_KEY);
+    const raw = safeGetItem(DOCS_STORAGE_KEY);
     docsArticles = raw ? JSON.parse(raw) : [];
     if (!Array.isArray(docsArticles)) docsArticles = [];
   } catch (e) { docsArticles = []; }
 }
 
 function saveDocsToStorage() {
-  try { localStorage.setItem(DOCS_STORAGE_KEY, JSON.stringify(docsArticles)); }
-  catch (e) { console.warn('Could not save docs', e); throw e; }
+  try {
+    safeSetItem(DOCS_STORAGE_KEY, JSON.stringify(docsArticles));
+  } catch (e) {
+    console.warn('Could not save docs', e);
+  }
 }
 
 function setDocsSaveStatus(text, cls) {
@@ -1796,6 +1864,85 @@ function deleteDoc(id) {
   renderDocsList();
 }
 
+/* Move current Title + Description into Docs — no duplicate if already moved */
+function moveToDocs() {
+  var title = ((document.getElementById('titleInput') || {}).value || '').trim();
+  var descEl = document.getElementById('descInput');
+  var html = descEl ? (descEl.innerHTML || '') : '';
+  var text = getDescText();
+
+  if (!title && !text) {
+    alert('Title ya Description mein kuch likho pehle.');
+    return;
+  }
+
+  saveCurrentDocFromEditor(false);
+  var docTitle = title || 'Untitled document';
+  var contentHtml = html || (text ? text.replace(/\n/g, '<br>') : '');
+  var contentPlain = text || '';
+
+  // Already moved? Match by same title (case-insensitive) OR same plain text content
+  var existing = null;
+  for (var i = 0; i < docsArticles.length; i++) {
+    var d = docsArticles[i];
+    var dTitle = (d.title || '').trim().toLowerCase();
+    var dPlain = '';
+    try {
+      var tmp = document.createElement('div');
+      tmp.innerHTML = d.content || '';
+      dPlain = (tmp.innerText || tmp.textContent || '').replace(/\u00a0/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+    } catch (e) {}
+    if (dTitle && dTitle === docTitle.toLowerCase()) {
+      existing = d;
+      break;
+    }
+    if (contentPlain && dPlain && dPlain === contentPlain) {
+      existing = d;
+      break;
+    }
+  }
+
+  var pill = document.getElementById('savedPill');
+
+  if (existing) {
+    // Already in Docs — just open it, do NOT create duplicate
+    activeDocId = existing.id;
+    document.getElementById('docsEditorTitle').value = existing.title || docTitle;
+    document.getElementById('docsEditor').innerHTML = existing.content || contentHtml;
+    renderDocsList();
+    setDocsSaveStatus('Already in Docs', 'saved');
+    openDocsPanel();
+    if (pill) {
+      pill.textContent = '📄 Already in Docs';
+      setTimeout(function () { pill.textContent = 'Saved just now'; }, 2500);
+    }
+    return;
+  }
+
+  // First time — create new doc
+  var id = 'doc_' + Date.now();
+  var doc = {
+    id: id,
+    title: docTitle,
+    content: contentHtml,
+    updated: Date.now()
+  };
+  docsArticles.unshift(doc);
+  activeDocId = id;
+  saveDocsToStorage();
+
+  document.getElementById('docsEditorTitle').value = docTitle;
+  document.getElementById('docsEditor').innerHTML = contentHtml;
+  renderDocsList();
+  setDocsSaveStatus('Saved', 'saved');
+  openDocsPanel();
+
+  if (pill) {
+    pill.textContent = '📄 Moved to Docs';
+    setTimeout(function () { pill.textContent = 'Saved just now'; }, 2500);
+  }
+}
+
 function useDocInPdf() {
   saveCurrentDocFromEditor(false);
   var ed = document.getElementById('docsEditor');
@@ -1808,7 +1955,7 @@ function useDocInPdf() {
 
   // Does current tab already have work?
   var curTitle = (document.getElementById('titleInput') || {}).value || '';
-  var curDesc = (document.getElementById('descInput') || {}).value || '';
+  var curDesc = getDescText();
   var hasExistingWork =
     (curTitle.trim() && curTitle.trim() !== 'Untitled') ||
     (curDesc.trim().length > 0);
@@ -1827,8 +1974,7 @@ function useDocInPdf() {
   }
 
   // Put Docs content into the active tab
-  var descEl = document.getElementById('descInput');
-  if (descEl) descEl.value = text || title;
+  setDescText(text || title || '');
   var titleEl = document.getElementById('titleInput');
   if (titleEl) titleEl.value = title || '';
 
@@ -1937,6 +2083,7 @@ function showApp() {
   document.getElementById("loginScreen").style.display = "none";
   document.getElementById("appContent").style.display = "block";
   initDashboards();
+  initDescEditor();
   // Preload fonts in background so first Generate is fast
   loadFonts().catch(function () {});
 }
@@ -2019,16 +2166,156 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs
 let generatedFiles = [];
 let currentFontSize = 11;
 
+/* ===== Docs-like helpers for description editor ===== */
+function getDescText() {
+  var el = document.getElementById('descInput');
+  if (!el) return '';
+  // innerText preserves newlines from contenteditable better for PDF
+  return (el.innerText || el.textContent || '').replace(/\u00a0/g, ' ').replace(/\n{3,}/g, '\n\n').trimEnd();
+}
+function setDescText(text) {
+  var el = document.getElementById('descInput');
+  if (!el) return;
+  // Clear and set as plain text (preserves newlines as <br> or text nodes)
+  el.innerHTML = '';
+  if (text) {
+    // Convert plain text with \n into paragraphs / br for nicer Docs feel
+    var parts = String(text).split('\n');
+    parts.forEach(function (line, i) {
+      if (i > 0) el.appendChild(document.createElement('br'));
+      if (line) el.appendChild(document.createTextNode(line));
+    });
+  }
+  if (typeof updateDescEmptyClass === 'function') updateDescEmptyClass();
+}
+function focusDesc() {
+  var el = document.getElementById('descInput');
+  if (el) el.focus();
+}
+
+/* Clean pasted HTML so content fills the full box like Google Docs */
+function normalizePastedHtml(html) {
+  if (!html) return '';
+  var div = document.createElement('div');
+  div.innerHTML = html;
+  // Remove fixed width / height / position that break full-width layout
+  div.querySelectorAll('*').forEach(function (node) {
+    if (!node.style) return;
+    node.style.removeProperty('width');
+    node.style.removeProperty('min-width');
+    node.style.removeProperty('max-width');
+    node.style.removeProperty('height');
+    node.style.removeProperty('min-height');
+    node.style.removeProperty('max-height');
+    node.style.removeProperty('position');
+    node.style.removeProperty('left');
+    node.style.removeProperty('right');
+    node.style.removeProperty('top');
+    node.style.removeProperty('bottom');
+    node.style.removeProperty('margin-left');
+    node.style.removeProperty('margin-right');
+    // Force full width for common containers
+    if (/^(DIV|P|SECTION|ARTICLE|TABLE|H1|H2|H3|H4|H5|H6)$/i.test(node.tagName)) {
+      node.style.maxWidth = '100%';
+    }
+  });
+  // Strip empty style attributes
+  div.querySelectorAll('[style=""]').forEach(function (n) { n.removeAttribute('style'); });
+  return div.innerHTML;
+}
+
+function updateDescEmptyClass() {
+  var el = document.getElementById('descInput');
+  if (!el) return;
+  var text = (el.innerText || '').replace(/\u00a0/g, ' ').trim();
+  if (!text) {
+    el.classList.add('is-empty');
+  } else {
+    el.classList.remove('is-empty');
+  }
+}
+
+function initDescEditor() {
+  var el = document.getElementById('descInput');
+  if (!el || el._descInited) return;
+  el._descInited = true;
+
+  // Paste: keep rich formatting but make it fill the full box
+  el.addEventListener('paste', function (e) {
+    var cd = e.clipboardData || window.clipboardData;
+    if (!cd) return;
+    var html = cd.getData('text/html');
+    var text = cd.getData('text/plain');
+    if (html && html.length > 20) {
+      e.preventDefault();
+      var cleaned = normalizePastedHtml(html);
+      try {
+        document.execCommand('insertHTML', false, cleaned);
+      } catch (err) {
+        document.execCommand('insertText', false, text || '');
+      }
+    }
+    setTimeout(function () {
+      updateDescEmptyClass();
+      el.scrollTop = el.scrollHeight;
+    }, 0);
+  });
+
+  el.addEventListener('input', function () {
+    updateDescEmptyClass();
+  });
+  el.addEventListener('blur', updateDescEmptyClass);
+  el.addEventListener('focus', function () {
+    // remove placeholder class while typing; will restore on blur if empty
+    el.classList.remove('is-empty');
+  });
+
+  updateDescEmptyClass();
+}
+
 function changeFontSize(delta) {
   currentFontSize = Math.max(8, Math.min(36, currentFontSize + delta));
   document.getElementById('fontSizeLabel').textContent = currentFontSize;
-  document.getElementById('descInput').style.fontSize = currentFontSize + 'px';
+  var el = document.getElementById('descInput');
+  if (el) el.style.fontSize = currentFontSize + 'px';
 }
-function toggleFormat(btn) { btn.classList.toggle('active'); }
-function applyColor(color) { document.getElementById('descInput').style.color = color; }
+function toggleFormat(btn) {
+  btn.classList.toggle('active');
+  focusDesc();
+  var cmd = 'bold';
+  if (btn.id === 'btnItalic') cmd = 'italic';
+  else if (btn.id === 'btnUnderline') cmd = 'underline';
+  try { document.execCommand(cmd, false, null); } catch (e) {}
+}
+function applyColor(color) {
+  focusDesc();
+  try { document.execCommand('foreColor', false, color); } catch (e) {}
+  // Also keep global for PDF fallback
+  var el = document.getElementById('descInput');
+  // don't force whole color
+}
 document.getElementById('fontSelect').addEventListener('change', function() {
-  document.getElementById('descInput').style.fontFamily = this.value;
+  focusDesc();
+  try { document.execCommand('fontName', false, this.value); } catch (e) {}
+  var el = document.getElementById('descInput');
+  if (el) el.style.fontFamily = this.value;
 });
+
+// Style select (Heading / Normal) for desc editor
+(function () {
+  var sel = document.getElementById('styleSelect');
+  if (sel) {
+    sel.addEventListener('change', function () {
+      focusDesc();
+      var v = this.value || 'Normal text';
+      var tag = 'p';
+      if (v.indexOf('Heading 1') >= 0) tag = 'h1';
+      else if (v.indexOf('Heading 2') >= 0) tag = 'h2';
+      else if (v.indexOf('Heading 3') >= 0) tag = 'h3';
+      try { document.execCommand('formatBlock', false, tag); } catch (e) {}
+    });
+  }
+})();
 
 let fontsReady = null;
 async function loadFonts(){
@@ -2052,6 +2339,7 @@ function toCodepoints(str){
 async function fetchEmojiPng(cluster){
   const key = toCodepoints(cluster);
   if(emojiImageCache.has(key)) return emojiImageCache.get(key);
+  // Direct fetch — no downscale step (faster save)
   const url = `https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/72x72/${key}.png`;
   try{
     const res = await fetch(url);
@@ -2066,7 +2354,7 @@ async function fetchEmojiPng(cluster){
 }
 const EMOJI_TEST = /\p{Extended_Pictographic}/u;
 const GLYPH_FONT_STACK = "sans-serif";
-const GLYPH_REF_PX = 100;
+const GLYPH_REF_PX = 40; // low-res glyphs → much smaller PDF
 let _measureCanvas = null;
 function getMeasureCtx(){
   if(!_measureCanvas) _measureCanvas = document.createElement('canvas');
@@ -2124,21 +2412,25 @@ async function rasterizeGlyphToPng(str, bold, colorCss){
   canvas.width = Math.ceil(textWidthPx) + 2;
   canvas.height = canvasHeightPx;
   const c2 = canvas.getContext('2d');
+  // White bg so JPEG compresses well (smaller PDF)
+  c2.fillStyle = '#ffffff';
+  c2.fillRect(0, 0, canvas.width, canvas.height);
   c2.font = fontStr;
   c2.textBaseline = 'alphabetic';
   c2.fillStyle = colorCss;
-  c2.clearRect(0, 0, canvas.width, canvas.height);
   c2.fillText(str, 1, baselineYpx);
   return new Promise(resolve=>{
+    // JPEG quality 0.55 → much smaller than PNG for text glyphs
     canvas.toBlob(blob=>{
       if(!blob){ resolve(null); return; }
       const reader = new FileReader();
       reader.onload = () => resolve({
         dataUrl: reader.result, textWidthPx,
-        canvasWidthPx: canvas.width, canvasHeightPx, baselineYpx
+        canvasWidthPx: canvas.width, canvasHeightPx, baselineYpx,
+        isJpeg: true
       });
       reader.readAsDataURL(blob);
-    }, 'image/png');
+    }, 'image/jpeg', 0.55);
   });
 }
 function dataUrlToBytes(dataUrl){
@@ -2158,7 +2450,11 @@ async function embedGlyphOnce(pdfDoc, str, bold, color){
   const raster = await rasterizeGlyphToPng(str, bold, colorCss);
   if(!raster){ cache.set(key, null); return null; }
   try{
-    const img = await pdfDoc.embedPng(dataUrlToBytes(raster.dataUrl));
+    var bytes = dataUrlToBytes(raster.dataUrl);
+    // JPEG preferred (smaller); fallback PNG
+    var img = raster.isJpeg
+      ? await pdfDoc.embedJpg(bytes)
+      : await pdfDoc.embedPng(bytes);
     const result = { img, textWidthPx: raster.textWidthPx, canvasHeightPx: raster.canvasHeightPx, baselineYpx: raster.baselineYpx };
     cache.set(key, result);
     return result;
@@ -2186,7 +2482,7 @@ function livePreview(){
   document.getElementById('titleFontLabel').textContent = size + 'pt';
 }
 document.getElementById('titleInput').value = 'Certificate of Appreciation';
-document.getElementById('descInput').value = 'This certificate is proudly presented to {name} in recognition of outstanding contribution. 🎉\n\nContact: 9876543210';
+setDescText('This certificate is proudly presented to {name} in recognition of outstanding contribution. 🎉\n\nContact: 9876543210');
 livePreview();
 
 function addWordRow(find='', replace=''){
@@ -2199,12 +2495,12 @@ function addWordRow(find='', replace=''){
     <button onclick="this.parentElement.remove()">✕</button>`;
   wrap.appendChild(row);
 }
-addWordRow('americas air','copa airlines');
+// default word row already in HTML
 
 function applyWordReplace(){
   const rows = document.querySelectorAll('#wordRows .word-row');
   let title = document.getElementById('titleInput').value;
-  let desc = document.getElementById('descInput').value;
+  let desc = getDescText();
   let count = 0;
   rows.forEach(row=>{
     const inputs = row.querySelectorAll('input');
@@ -2220,7 +2516,7 @@ function applyWordReplace(){
     desc = desc.replace(re, replace);
   });
   document.getElementById('titleInput').value = title;
-  document.getElementById('descInput').value = desc;
+  setDescText(desc);
   document.getElementById('wordStatus').textContent = `${count} occurrences replaced.`;
   livePreview();
 }
@@ -2247,7 +2543,7 @@ function applyNumberReplace(){
   const targetsRaw = document.getElementById('numberTargets').value;
   const targets = targetsRaw.split('\n').map(t=>t.trim()).filter(Boolean).map(t=>t.replace(/\D/g,''));
   let title = document.getElementById('titleInput').value;
-  let desc = document.getElementById('descInput').value;
+  let desc = getDescText();
   const matches = detectNumberMatches(title+'\n'+desc);
   if(matches.length===0){
     document.getElementById('numberStatus').textContent = 'No 8–20 digit number found to replace.';
@@ -2268,7 +2564,7 @@ function applyNumberReplace(){
   }
   title = replaceAllIn(title); desc = replaceAllIn(desc);
   document.getElementById('titleInput').value = title;
-  document.getElementById('descInput').value = desc;
+  setDescText(desc);
   document.getElementById('numberStatus').textContent = `All ${matches.length} number(s) replaced.`;
   livePreview();
 }
@@ -2276,11 +2572,24 @@ function applyNumberReplace(){
 function updateNamesHint(){
   const names = document.getElementById('replacementNames').value.split('\n').map(s=>s.trim()).filter(Boolean);
   const outs = document.getElementById('outputNames').value.split('\n').map(s=>s.trim()).filter(Boolean);
-  document.getElementById('namesCountHint').textContent = `${names.length} replacement name(s) · ${outs.length} output name(s)`;
+  const prefix = ((document.getElementById('namePrefix') || {}).value || '').trim();
+  let hint = `${names.length} replacement name(s) · ${outs.length} output name(s)`;
+  if (prefix && names.length > 0) {
+    const padLen = names.length >= 100 ? 3 : 2;
+    const examples = [];
+    for (let i = 0; i < Math.min(3, names.length); i++) {
+      examples.push(prefix + String(i + 1).padStart(padLen, '0'));
+    }
+    if (names.length > 3) examples.push('...');
+    hint += ` · Sequential: ${examples.join(', ')}`;
+  }
+  document.getElementById('namesCountHint').textContent = hint;
 }
 ['input','keyup','change','paste'].forEach(evt=>{
   document.getElementById('replacementNames').addEventListener(evt, ()=>setTimeout(updateNamesHint,0));
   document.getElementById('outputNames').addEventListener(evt, ()=>setTimeout(updateNamesHint,0));
+  var prefixEl = document.getElementById('namePrefix');
+  if (prefixEl) prefixEl.addEventListener(evt, ()=>setTimeout(updateNamesHint,0));
 });
 updateNamesHint();
 
@@ -2479,23 +2788,24 @@ async function buildSinglePdf(title, description, titleSize, styleOpts) {
 
   var useUnicode = needsCustomFont(title) || needsCustomFont(description);
   var useMixed = needsMixedRenderer(title) || needsMixedRenderer(description);
-  // Emoji PNG path needs reliable Unicode font metrics; use Noto whenever emoji OR non-Latin is present
-  var useNoto = useUnicode || useMixed;
+  // Noto ONLY when Hindi/non-Latin text present. Emoji = PNG images + Helvetica (chhota PDF ~50-100KB)
+  var useNoto = useUnicode;
 
   var fontRegular, fontBold;
   var bodyFk = null, titleFk = null;
 
   if (useNoto) {
-    // Noto with subset — Hindi / emoji / special scripts (sirf used glyphs)
+    // Noto with subset — Hindi / special scripts (sirf used glyphs) — keeps PDF ~100-200KB
     var fontData = await loadFonts();
     ensureFontkitCoverage(fontData.sansBytes, fontData.boldBytes);
     pdfDoc.registerFontkit(fontkit);
     fontRegular = await pdfDoc.embedFont(fontData.sansBytes, { subset: true });
+    // Only embed bold if title needs it or body is bold — saves ~50-150KB
     fontBold = await pdfDoc.embedFont(fontData.boldBytes, { subset: true });
     bodyFk = isBold ? fkFontBold : fkFontRegular;
     titleFk = fkFontBold;
   } else {
-    // Pure Latin, no emoji → standard Helvetica (ZERO font data → bahut chhota PDF)
+    // Latin + optional emoji → standard Helvetica (tiny PDF, often <50KB)
     fontRegular = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
     fontBold = await pdfDoc.embedFont(PDFLib.StandardFonts.HelveticaBold);
   }
@@ -2544,6 +2854,7 @@ async function buildSinglePdf(title, description, titleSize, styleOpts) {
     }
   }
 
+  // Object streams on = smaller PDFs (~100-200KB target)
   var bytes = await pdfDoc.save({ useObjectStreams: true });
   return new Blob([bytes], { type: 'application/pdf' });
 }
@@ -2564,11 +2875,12 @@ function snapshotFormData() {
     tabId: activeTabId,
     tabName: (activeTabId && dashboards[activeTabId] && dashboards[activeTabId].tabName) || '',
     title: (document.getElementById('titleInput') || {}).value || 'Untitled',
-    desc: (document.getElementById('descInput') || {}).value || '',
+    desc: getDescText(),
     titleSize: (document.getElementById('titleFontSize') || {}).value || '20',
     originalName: ((document.getElementById('originalName') || {}).value || '').trim(),
     names: ((document.getElementById('replacementNames') || {}).value || '').split('\n').map(function (s) { return s.trim(); }).filter(Boolean),
     outNames: ((document.getElementById('outputNames') || {}).value || '').split('\n').map(function (s) { return s.trim(); }).filter(Boolean),
+    namePrefix: ((document.getElementById('namePrefix') || {}).value || '').trim(),
     numberTargets: (document.getElementById('numberTargets') || {}).value || '',
     wordRows: wordRows,
     bodyColor: (document.getElementById('textColor') || {}).value || '#0f172a',
@@ -2674,6 +2986,7 @@ async function createPdfsFromSnapshot(snap) {
   var originalName = snap.originalName || '';
   var names = snap.names || [];
   var outNames = snap.outNames || [];
+  var namePrefix = (snap.namePrefix || '').trim();
   var tabId = snap.tabId;
   var styleOpts = {
     bodyColor: snap.bodyColor || '#0f172a',
@@ -2686,17 +2999,29 @@ async function createPdfsFromSnapshot(snap) {
     return [];
   }
 
-  updateStatusForTab(tabId, 'Loading fonts...', null, '0/' + names.length + ' generated · 0 failed', 'processing', ['queued']);
   if (tabId === activeTabId) setPdfProgress(0, names.length, 'running');
-  await loadFonts();
+  // Only load Noto fonts when text actually needs non-Latin glyphs (saves time on pure English batches)
+  var needsNoto = needsCustomFont(snap.title) || needsCustomFont(snap.desc);
+  if (needsNoto) {
+    updateStatusForTab(tabId, 'Loading fonts...', null, '0/' + names.length + ' generated · 0 failed', 'processing', ['queued']);
+    await loadFonts();
+  }
   updateStatusForTab(tabId, 'Generating PDFs...', null, '0/' + names.length + ' generated · 0 failed', 'generating', ['queued', 'processing']);
 
   // Prepare all jobs first (fast, sync)
   var jobs = [];
   var totalReplacements = 0;
+  var padLen = names.length >= 100 ? 3 : 2;
   for (var i = 0; i < names.length; i++) {
     var name = names[i];
-    var outName = (outNames[i] || name.toLowerCase().replace(/\s+/g, '-')).replace(/\.pdf$/i, '') + '.pdf';
+    var outName;
+    if (namePrefix) {
+      // Sequential: xyz01, xyz02, xyz03...
+      var num = String(i + 1).padStart(padLen, '0');
+      outName = namePrefix + num + '.pdf';
+    } else {
+      outName = (outNames[i] || name.toLowerCase().replace(/\s+/g, '-')).replace(/\.pdf$/i, '') + '.pdf';
+    }
     var title = baseTitle, desc = baseDesc;
     if (originalName) {
       var pattern = originalName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -2710,11 +3035,12 @@ async function createPdfsFromSnapshot(snap) {
     jobs.push({ title: title, desc: desc, outName: outName, index: i });
   }
 
-  // Parallel generation with concurrency limit (3 at a time = fast but not freezing browser)
-  var CONCURRENCY = 3;
+  // Balanced: 5 parallel + light yield → fast save + smooth page
+  var CONCURRENCY = 5;
   var files = new Array(jobs.length);
   var generatedCount = 0, failed = 0;
   var cursor = 0;
+  var sinceUi = 0;
 
   async function worker() {
     while (cursor < jobs.length) {
@@ -2729,14 +3055,19 @@ async function createPdfsFromSnapshot(snap) {
         files[myIndex] = null;
         console.error('PDF generation failed for', job.outName, err);
       }
-      updateStatusForTab(
-        tabId, null, null,
-        generatedCount + '/' + names.length + ' generated · ' + failed + ' failed',
-        'generating',
-        ['queued', 'processing']
-      );
-      if (tabId === activeTabId) {
-        setPdfProgress(generatedCount + failed, names.length, 'running');
+      sinceUi++;
+      if (sinceUi >= 2 || (generatedCount + failed) >= names.length) {
+        sinceUi = 0;
+        updateStatusForTab(
+          tabId, null, null,
+          generatedCount + '/' + names.length + ' generated · ' + failed + ' failed',
+          'generating',
+          ['queued', 'processing']
+        );
+        if (tabId === activeTabId) {
+          setPdfProgress(generatedCount + failed, names.length, 'running');
+        }
+        await new Promise(function (r) { setTimeout(r, 0); });
       }
     }
   }
@@ -2802,7 +3133,8 @@ async function downloadFilesAsZip(files, zipName) {
   if (!files || files.length === 0) return;
   var zip = new JSZip();
   files.forEach(function (f) { zip.file(f.name, f.blob); });
-  var zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 1 } });
+  // STORE = fastest zip (PDFs already compact; no need to recompress)
+  var zipBlob = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
   var url = URL.createObjectURL(zipBlob);
   var a = document.createElement('a');
   a.href = url;
@@ -2919,6 +3251,8 @@ async function convertAll() {
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, '') || 'tab';
       var zipName = 'docmerge-' + safeName + '.zip';
+      // Yield so UI can paint "Preparing..." before heavy zip
+      await new Promise(function (r) { setTimeout(r, 0); });
       await downloadFilesAsZip(files, zipName);
 
       if (statusEl && activeTabId === jobTabId) {
@@ -2950,7 +3284,7 @@ async function convertAll() {
 
 async function downloadSinglePreview(){
   const title = document.getElementById('titleInput').value || 'Untitled';
-  const desc = document.getElementById('descInput').value || '';
+  const desc = getDescText();
   const size = document.getElementById('titleFontSize').value;
   const blob = await buildSinglePdf(title, desc, size);
   const url = URL.createObjectURL(blob);

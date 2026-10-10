@@ -1,0 +1,2964 @@
+<html lang="hi"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Docmerge · Batch PDFs</title>
+
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%230ea5e9'/%3E%3Cstop offset='50%25' stop-color='%23ec4899'/%3E%3Cstop offset='100%25' stop-color='%238b5cf6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Cpath d='M18 16h20c1.1 0 2 .9 2 2v4H16v-4c0-1.1.9-2 2-2zm-2 10h28v22c0 1.1-.9 2-2 2H18c-1.1 0-2-.9-2-2V26zm6 4v3h16v-3H22zm0 7v3h12v-3H22z' fill='white'/%3E%3C/svg%3E" type="image/svg+xml">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<style>
+  :root {
+    --primary: #0ea5e9;
+    --primary-dark: #0284c7;
+    --accent: #ec4899;
+    --purple: #8b5cf6;
+    --mint: #14b8a6;
+    --peach: #fb923c;
+    --text: #0f172a;
+    --muted: #64748b;
+    --green: #10b981;
+    --glass: rgba(255,255,255,0.72);
+    --glass-border: rgba(255,255,255,0.55);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background:
+      radial-gradient(ellipse 90% 70% at 5% 15%, rgba(6,182,212,0.32) 0%, transparent 55%),
+      radial-gradient(ellipse 75% 55% at 95% 8%, rgba(244,63,94,0.22) 0%, transparent 50%),
+      radial-gradient(ellipse 65% 55% at 75% 92%, rgba(99,102,241,0.25) 0%, transparent 50%),
+      radial-gradient(ellipse 55% 45% at 15% 85%, rgba(245,158,11,0.18) 0%, transparent 45%),
+      radial-gradient(ellipse 40% 35% at 50% 50%, rgba(16,185,129,0.1) 0%, transparent 50%),
+      linear-gradient(155deg, #ecfeff 0%, #fff1f2 30%, #eef2ff 60%, #fffbeb 100%);
+    background-attachment: fixed;
+    color: var(--text);
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* ===== LOGIN SCREEN ===== */
+  #loginScreen {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+      radial-gradient(ellipse 90% 70% at 10% 20%, rgba(6,182,212,0.4) 0%, transparent 55%),
+      radial-gradient(ellipse 75% 55% at 90% 12%, rgba(244,63,94,0.32) 0%, transparent 50%),
+      radial-gradient(ellipse 65% 55% at 65% 88%, rgba(99,102,241,0.3) 0%, transparent 50%),
+      radial-gradient(ellipse 50% 40% at 25% 75%, rgba(245,158,11,0.2) 0%, transparent 45%),
+      linear-gradient(155deg, #a5f3fc 0%, #fecdd3 35%, #c7d2fe 65%, #fde68a 100%);
+    padding: 20px;
+  }
+
+  .login-card {
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1.5px solid rgba(255,255,255,0.7);
+    border-radius: 24px;
+    padding: 40px 36px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow:
+      0 20px 50px rgba(14,165,233,0.18),
+      0 8px 24px rgba(236,72,153,0.12),
+      inset 0 1px 0 rgba(255,255,255,0.8);
+    text-align: center;
+    animation: cardIn 0.45s ease-out;
+  }
+
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(16px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .login-logo {
+    width: 72px;
+    height: 72px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #06b6d4, #f43f5e 50%, #6366f1);
+    margin: 0 auto 18px;
+    box-shadow:
+      0 10px 28px rgba(6,182,212,0.45),
+      0 4px 12px rgba(244,63,94,0.3);
+    position: relative;
+  }
+  .login-logo::after {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border-radius: 17px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.35), transparent 60%);
+    pointer-events: none;
+  }
+
+  .login-title {
+    font-weight: 800;
+    font-size: 1.65rem;
+    background: linear-gradient(135deg, #0891b2, #e11d48, #4f46e5);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 6px;
+    letter-spacing: -0.4px;
+  }
+
+  .login-subtitle {
+    font-size: 0.88rem;
+    color: var(--muted);
+    margin-bottom: 30px;
+  }
+
+  .login-field {
+    text-align: left;
+    margin-bottom: 16px;
+  }
+
+  .login-field label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 6px;
+    letter-spacing: 0.2px;
+  }
+
+  .login-field input {
+    width: 100%;
+    border: 1.5px solid #a5d8ff;
+    border-radius: 12px;
+    padding: 13px 15px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    background: rgba(255,255,255,0.9);
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  }
+
+  .login-field input:focus {
+    outline: none;
+    border-color: #0ea5e9;
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(14,165,233,0.18);
+  }
+
+  .login-error {
+    color: #ef4444;
+    font-size: 0.82rem;
+    margin-bottom: 12px;
+    min-height: 20px;
+    font-weight: 600;
+  }
+
+  .login-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #06b6d4, #f43f5e 55%, #6366f1);
+    color: #fff;
+    border: none;
+    padding: 15px;
+    border-radius: 14px;
+    font-weight: 800;
+    font-size: 1.02rem;
+    cursor: pointer;
+    transition: all 0.25s;
+    box-shadow: 0 8px 24px rgba(6,182,212,0.35), 0 2px 8px rgba(244,63,94,0.2);
+    letter-spacing: 0.3px;
+  }
+
+  .login-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(244,63,94,0.4), 0 4px 12px rgba(6,182,212,0.25);
+  }
+
+  .login-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .login-hint {
+    margin-top: 18px;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  /* Hide main app until logged in */
+  #appContent {
+    display: none;
+  }
+
+  /* ===== TOPBAR ===== */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+    background: rgba(255,255,255,0.7);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1.5px solid rgba(125,211,252,0.6);
+    box-shadow: 0 4px 24px rgba(14,165,233,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+
+  .topbar .brand { display: flex; align-items: center; gap: 12px; }
+
+  .brand .logo {
+    width: 42px; height: 42px; border-radius: 13px;
+    background: linear-gradient(135deg, #06b6d4, #f43f5e 50%, #6366f1);
+    box-shadow: 0 5px 18px rgba(6,182,212,0.4), 0 2px 6px rgba(244,63,94,0.25);
+    position: relative;
+  }
+  .brand .logo::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    border-radius: 11px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.3), transparent 55%);
+    pointer-events: none;
+  }
+
+  .brand .name {
+    font-weight: 800; font-size: 1.3rem; letter-spacing: -0.4px;
+    background: linear-gradient(135deg, #0891b2, #e11d48, #4f46e5);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+
+  .brand .tagline { font-size: 0.72rem; color: var(--muted); margin-top: 1px; }
+
+  .topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .saved-pill {
+    font-size: 0.75rem; color: #047857;
+    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+    padding: 6px 14px;
+    border-radius: 20px; font-weight: 700;
+    border: 1px solid #6ee7b7;
+    box-shadow: 0 2px 8px rgba(16,185,129,0.15);
+  }
+
+  .logout-btn {
+    font-size: 0.78rem;
+    color: #64748b;
+    background: rgba(255,255,255,0.85);
+    border: 1.5px solid #e2e8f0;
+    padding: 7px 15px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  .logout-btn:hover {
+    border-color: #f87171;
+    color: #ef4444;
+    background: #fef2f2;
+    box-shadow: 0 2px 10px rgba(239,68,68,0.12);
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #06b6d4, #6366f1);
+    color: #fff; border: none; padding: 9px 18px;
+    border-radius: 11px; font-weight: 700; font-size: 0.84rem;
+    cursor: pointer; transition: all 0.22s;
+    box-shadow: 0 4px 16px rgba(6,182,212,0.35);
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgba(244,63,94,0.4);
+  }
+  .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+  /* Progress pill next to Download PDF */
+  .pdf-progress-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .pdf-progress-pill {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 7px 12px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #e0f2fe, #fce7f3);
+    border: 1.5px solid #7dd3fc;
+    color: #0369a1;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(14,165,233,0.12);
+    min-width: 72px;
+    justify-content: center;
+  }
+  .pdf-progress-pill.visible { display: inline-flex; }
+  .pdf-progress-pill.running {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    border-color: #fbbf24;
+    color: #b45309;
+  }
+  .pdf-progress-pill.done {
+    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+    border-color: #6ee7b7;
+    color: #047857;
+  }
+  .pdf-progress-pill .pp-count { font-variant-numeric: tabular-nums; }
+  .pdf-progress-pill .pp-label { font-weight: 600; opacity: 0.85; font-size: 0.7rem; }
+
+  /* ===== STATUS ===== */
+  .status-wrap { display: none; }
+  .status-card {
+    background: linear-gradient(135deg, rgba(186,230,253,0.9), rgba(251,207,232,0.9), rgba(221,214,254,0.9));
+    backdrop-filter: blur(10px);
+    border: 1.5px solid rgba(125,211,252,0.7);
+    border-radius: 18px;
+    padding: 16px 22px; margin: 16px 20px 0;
+    box-shadow: 0 6px 24px rgba(14,165,233,0.12);
+  }
+  .status-top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .status-top .title { font-weight: 800; font-size: 0.98rem; }
+  .status-top .meta { font-size: 0.78rem; color: var(--muted); }
+  .status-row { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; flex-wrap: wrap; gap: 10px; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip-step {
+    font-size: 0.72rem; padding: 5px 13px; border-radius: 20px;
+    background: rgba(255,255,255,0.85); border: 1px solid #cbd5e1; color: var(--muted); font-weight: 500;
+    transition: all 0.2s;
+  }
+  .chip-step.active {
+    background: linear-gradient(135deg, #06b6d4, #f43f5e);
+    border-color: transparent; color: #fff; font-weight: 700;
+    box-shadow: 0 4px 14px rgba(6,182,212,0.4);
+    transform: scale(1.04);
+  }
+  .chip-step.done { background: linear-gradient(135deg, #d1fae5, #a7f3d0); border-color: #6ee7b7; color: #047857; font-weight: 600; }
+  .status-counts { font-size: 0.78rem; color: var(--muted); }
+
+  /* ===== LAYOUT ===== */
+  .layout { display: flex; gap: 0; align-items: flex-start; padding: 20px 24px 70px; }
+
+  /* ===== SIDEBAR ===== */
+  .sidebar {
+    width: 330px; flex-shrink: 0;
+    background: rgba(255,255,255,0.65);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1.5px solid rgba(125,211,252,0.55);
+    border-radius: 20px;
+    padding: 20px; margin-right: 20px;
+    max-height: calc(100vh - 50px); overflow-y: auto;
+    position: sticky; top: 80px;
+    box-shadow: 0 8px 32px rgba(14,165,233,0.1), inset 0 1px 0 rgba(255,255,255,0.7);
+  }
+
+  .step { padding: 16px 0; border-bottom: 1.5px solid rgba(186,230,253,0.7); }
+  .step:last-of-type { border-bottom: none; }
+
+  .step-head { display: flex; align-items: center; gap: 9px; margin-bottom: 8px; }
+
+  .step-num {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: linear-gradient(135deg, #06b6d4, #f43f5e);
+    color: #fff; font-size: 0.74rem;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; flex-shrink: 0;
+    box-shadow: 0 3px 10px rgba(6,182,212,0.4);
+  }
+
+  .step-title { font-weight: 700; font-size: 0.9rem; }
+  .step-optional { font-size: 0.68rem; color: var(--muted); font-weight: 500; }
+
+  .sidebar input[type=text],
+  .sidebar textarea {
+    width: 100%; border: 1.5px solid #a5d8ff; border-radius: 11px;
+    padding: 10px 13px; font-size: 0.84rem; font-family: inherit;
+    background: rgba(255,255,255,0.9); transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .sidebar input[type=text]:focus,
+  .sidebar textarea:focus {
+    outline: none; border-color: #0ea5e9;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(14,165,233,0.18);
+  }
+  .sidebar textarea { min-height: 70px; resize: vertical; }
+
+  .word-row { display: flex; gap: 6px; margin-bottom: 7px; align-items: center; }
+  .word-row input { flex: 1; min-width: 0; }
+  .word-row button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.95rem; padding: 4px; transition: color 0.15s; }
+  .word-row button:hover { color: #ef4444; }
+
+  .link-btn {
+    background: none; border: none; color: #0284c7;
+    font-size: 0.78rem; cursor: pointer; padding: 3px 0; font-weight: 600;
+    transition: color 0.15s;
+  }
+  .link-btn:hover { color: #ec4899; text-decoration: underline; }
+
+  .hint-small { display: none; }
+
+  .full-btn {
+    width: 100%; background: linear-gradient(135deg, #06b6d4, #6366f1);
+    color: #fff; border: none; padding: 11px; border-radius: 11px;
+    font-weight: 700; font-size: 0.84rem; cursor: pointer; margin-top: 9px;
+    transition: all 0.22s; box-shadow: 0 4px 14px rgba(6,182,212,0.3);
+  }
+  .full-btn:hover { transform: translateY(-2px); box-shadow: 0 7px 18px rgba(244,63,94,0.35); }
+  .full-btn.outline {
+    background: rgba(255,255,255,0.9); border: 1.5px solid #0ea5e9; color: #0284c7; box-shadow: none;
+  }
+  .full-btn.outline:hover { background: #e0f2fe; border-color: #0284c7; }
+  .full-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .create-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #06b6d4, #f43f5e 50%, #6366f1);
+    color: #fff; border: none; padding: 15px; border-radius: 14px;
+    font-weight: 800; font-size: 0.95rem; cursor: pointer; margin-top: 20px;
+    transition: all 0.25s; box-shadow: 0 8px 24px rgba(6,182,212,0.35);
+    letter-spacing: 0.2px;
+  }
+  .create-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(244,63,94,0.4), 0 4px 12px rgba(6,182,212,0.2);
+  }
+
+  /* ===== MAIN ===== */
+  .main { flex: 1; min-width: 0; }
+
+  .field-card {
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1.5px solid rgba(125,211,252,0.55);
+    border-radius: 20px;
+    padding: 22px; margin-bottom: 18px;
+    box-shadow: 0 8px 32px rgba(14,165,233,0.1), inset 0 1px 0 rgba(255,255,255,0.7);
+  }
+
+  .field-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+
+  .field-head-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .field-title {
+    font-weight: 800; font-size: 0.88rem;
+    letter-spacing: 0.4px; color: #0369a1;
+    text-transform: uppercase;
+  }
+
+  /* ===== TOOLBAR ===== */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+    padding: 6px 10px;
+    background: linear-gradient(135deg, rgba(224,242,254,0.9), rgba(252,231,243,0.9));
+    border: 1.5px solid rgba(125,211,252,0.6);
+    border-radius: 12px;
+    flex: 1;
+    min-width: 0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+  }
+
+  .toolbar select,
+  .toolbar button,
+  .toolbar .size-ctrl {
+    font-size: 0.78rem;
+    border: 1px solid #cbd5e1;
+    background: #fff;
+    border-radius: 7px;
+    padding: 5px 8px;
+    cursor: pointer;
+    color: #334155;
+    transition: all 0.15s;
+  }
+
+  .toolbar select:hover,
+  .toolbar button:hover {
+    border-color: #0ea5e9;
+    background: #e0f2fe;
+    box-shadow: 0 2px 6px rgba(14,165,233,0.12);
+  }
+
+  .toolbar button.active {
+    background: linear-gradient(135deg, #06b6d4, #6366f1);
+    color: #fff; border-color: transparent;
+    box-shadow: 0 2px 8px rgba(6,182,212,0.3);
+  }
+
+  .toolbar .size-ctrl {
+    display: flex; align-items: center; gap: 3px; padding: 2px 5px;
+  }
+
+  .toolbar .size-ctrl button {
+    width: 22px; height: 22px; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; border: none; background: #f1f5f9; border-radius: 5px;
+  }
+  .toolbar .size-ctrl button:hover { background: #e0f2fe; }
+
+  .toolbar .size-ctrl span {
+    min-width: 18px; text-align: center; font-weight: 600; font-size: 0.78rem;
+  }
+
+  .toolbar .color-btn {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 2px solid #e2e8f0;
+    background: linear-gradient(135deg, #0ea5e9, #ec4899, #f59e0b, #10b981);
+    padding: 0; position: relative; overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.15s;
+  }
+  .toolbar .color-btn:hover { transform: scale(1.1); }
+
+  .toolbar .color-btn input {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+
+  .toolbar .sep {
+    width: 1px; height: 18px; background: #94a3b8; margin: 0 3px; opacity: 0.5;
+  }
+
+  /* Title input */
+  #titleInput {
+    width: 100%; border: 2px solid #7dd3fc; border-radius: 12px;
+    padding: 13px 15px; font-size: 1.05rem; font-weight: 600;
+    font-family: inherit; margin-bottom: 10px;
+    transition: box-shadow 0.2s, border-color 0.2s; background: rgba(255,255,255,0.95);
+  }
+  #titleInput:focus {
+    outline: none;
+    border-color: #0ea5e9;
+    box-shadow: 0 0 0 4px rgba(14,165,233,0.18);
+  }
+
+  .slider-row {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
+  }
+  .slider-row input[type=range] {
+    flex: 1; accent-color: #0ea5e9; height: 6px;
+    border-radius: 4px;
+  }
+  .slider-row .pt-label {
+    font-size: 0.78rem; color: var(--muted); min-width: 40px;
+    text-align: right; font-weight: 700;
+  }
+
+  /* Description */
+  #descInput {
+    width: 100%; min-height: 420px;
+    border: 2px solid #a5d8ff; border-radius: 14px;
+    padding: 15px 17px; font-size: 0.94rem; font-family: inherit;
+    line-height: 1.65; resize: vertical;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background: rgba(255,255,255,0.95);
+  }
+  #descInput:focus {
+    outline: none; border-color: #0ea5e9;
+    box-shadow: 0 0 0 4px rgba(14,165,233,0.15);
+  }
+
+  .field-hint { display: none; }
+
+  .sidebar::-webkit-scrollbar { width: 6px; }
+  .sidebar::-webkit-scrollbar-track { background: transparent; }
+  .sidebar::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #7dd3fc, #c084fc);
+    border-radius: 10px;
+  }
+
+  /* ===== MULTI-DASHBOARD TABS ===== */
+  .dashboard-tabs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px 0;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .tabs-list {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    flex: 1;
+  }
+  .tab-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    border-radius: 10px 10px 0 0;
+    background: rgba(255,255,255,0.45);
+    border: 1px solid rgba(255,255,255,0.6);
+    border-bottom: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748b;
+    transition: all 0.15s;
+    user-select: none;
+    min-width: 42px;
+    justify-content: center;
+    max-width: 180px;
+  }
+  .tab-item.active {
+    background: white;
+    color: #0f172a;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.04);
+  }
+  .tab-item:hover:not(.active) {
+    background: rgba(255,255,255,0.7);
+  }
+  .tab-item .tab-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 140px;
+  }
+  .tab-item .tab-name-input {
+    border: none;
+    outline: none;
+    background: #e0f2fe;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    color: #0f172a;
+    width: 110px;
+    max-width: 140px;
+  }
+  .tab-close {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .tab-close:hover {
+    background: #fee2e2;
+    color: #ef4444;
+  }
+  .tab-add-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1.5px dashed #94a3b8;
+    background: transparent;
+    color: #64748b;
+    font-size: 20px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .tab-add-btn:hover {
+    border-color: #0ea5e9;
+    color: #0ea5e9;
+    background: rgba(14,165,233,0.08);
+  }
+  .docs-toggle-btn {
+    margin-left: 4px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.6);
+    background: rgba(255,255,255,0.5);
+    color: #0f172a;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s;
+  }
+  .docs-toggle-btn:hover {
+    background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+
+  /* Full Google Docs-like panel */
+  .docs-panel {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100vh;
+    background: #f8f9fa;
+    z-index: 8000;
+    flex-direction: column;
+  }
+  .docs-panel.open { display: flex; }
+
+  .docs-topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px;
+    background: white;
+    border-bottom: 1px solid #e0e0e0;
+    min-height: 52px;
+  }
+  .docs-topbar-back {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: #5f6368;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .docs-topbar-back:hover { background: #f1f3f4; }
+  .docs-topbar-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 4px;
+    background: linear-gradient(135deg, #0ea5e9, #ec4899);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .docs-topbar-title-wrap {
+    flex: 1;
+    min-width: 0;
+  }
+  .docs-topbar-title {
+    border: none;
+    outline: none;
+    font-size: 16px;
+    font-weight: 500;
+    color: #202124;
+    width: 100%;
+    max-width: 400px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: transparent;
+  }
+  .docs-topbar-title:hover { background: #f1f3f4; }
+  .docs-topbar-title:focus { background: #f1f3f4; box-shadow: inset 0 0 0 2px #1a73e8; }
+  .docs-save-status {
+    font-size: 12px;
+    color: #80868b;
+    margin-left: 8px;
+  }
+  .docs-save-status.saving { color: #f9ab00; }
+  .docs-save-status.saved { color: #188038; }
+  .docs-save-status.error { color: #d93025; }
+  .docs-topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .docs-use-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 20px;
+    background: #1a73e8;
+    color: white;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .docs-use-btn:hover { background: #1765cc; }
+  .docs-save-btn {
+    padding: 8px 14px;
+    border: 1px solid #dadce0;
+    border-radius: 20px;
+    background: white;
+    color: #3c4043;
+    font-weight: 500;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .docs-save-btn:hover { background: #f8f9fa; }
+
+  /* Toolbar */
+  .docs-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 16px;
+    background: white;
+    border-bottom: 1px solid #e0e0e0;
+    flex-wrap: wrap;
+  }
+  .docs-tb-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: #3c4043;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+  }
+  .docs-tb-btn:hover { background: #f1f3f4; }
+  .docs-tb-btn.active { background: #e8f0fe; color: #1a73e8; }
+  .docs-tb-btn b { font-weight: 700; }
+  .docs-tb-btn i { font-style: italic; }
+  .docs-tb-btn u { text-decoration: underline; }
+  .docs-tb-sep {
+    width: 1px;
+    height: 20px;
+    background: #dadce0;
+    margin: 0 6px;
+  }
+  .docs-tb-select {
+    height: 32px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: #3c4043;
+    font-size: 13px;
+    padding: 0 8px;
+    cursor: pointer;
+  }
+  .docs-tb-select:hover { background: #f1f3f4; }
+
+  /* Body layout: sidebar + page */
+  .docs-body {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .docs-sidebar {
+    width: 240px;
+    background: white;
+    border-right: 1px solid #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+  .docs-sidebar-head {
+    padding: 12px 16px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #80868b;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .docs-list-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 8px 8px;
+  }
+  .doc-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #3c4043;
+    transition: background 0.12s;
+    margin-bottom: 2px;
+  }
+  .doc-item:hover { background: #f1f3f4; }
+  .doc-item.active {
+    background: #e8f0fe;
+    color: #1967d2;
+    font-weight: 600;
+  }
+  .doc-item-icon { font-size: 16px; flex-shrink: 0; }
+  .doc-item-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .doc-item-del {
+    width: 22px;
+    height: 22px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: #80868b;
+    cursor: pointer;
+    font-size: 14px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .doc-item:hover .doc-item-del { display: flex; }
+  .doc-item-del:hover { background: #fce8e6; color: #d93025; }
+  .docs-add-btn {
+    margin: 8px;
+    padding: 10px;
+    border-radius: 20px;
+    border: none;
+    background: #f1f3f4;
+    color: #3c4043;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .docs-add-btn:hover { background: #e8eaed; }
+
+  .docs-page-area {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    justify-content: center;
+    padding: 24px 16px 48px;
+    background: #f8f9fa;
+  }
+  .docs-page {
+    width: 100%;
+    max-width: 816px;
+    min-height: 1056px;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.08);
+    border-radius: 2px;
+    padding: 72px 72px 96px;
+    box-sizing: border-box;
+  }
+  @media (max-width: 700px) {
+    .docs-page { padding: 40px 24px 60px; }
+    .docs-sidebar { width: 180px; }
+  }
+  .docs-editor {
+    min-height: 500px;
+    outline: none;
+    font-size: 11pt;
+    line-height: 1.6;
+    color: #202124;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+  .docs-editor:empty:before {
+    content: attr(data-placeholder);
+    color: #9aa0a6;
+    pointer-events: none;
+  }
+  .docs-editor h1 {
+    font-size: 24pt;
+    font-weight: 700;
+    margin: 0 0 12px;
+    line-height: 1.25;
+    color: #202124;
+  }
+  .docs-editor h2 {
+    font-size: 16pt;
+    font-weight: 700;
+    margin: 20px 0 8px;
+    line-height: 1.3;
+  }
+  .docs-editor h3 {
+    font-size: 13pt;
+    font-weight: 700;
+    margin: 16px 0 6px;
+  }
+  .docs-editor p { margin: 0 0 12px; }
+  .docs-editor ul, .docs-editor ol {
+    margin: 0 0 12px;
+    padding-left: 28px;
+  }
+  .docs-editor li { margin-bottom: 4px; }
+  .docs-editor a { color: #1a73e8; }
+
+  .docs-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15,23,42,0.25);
+    z-index: 7999;
+  }
+  .docs-backdrop.open { display: block; }
+  .docs-empty {
+    text-align: center;
+    color: #9aa0a6;
+    font-size: 13px;
+    padding: 24px 12px;
+  }
+
+
+  .docs-save-status {
+    font-size: 12px;
+    font-weight: 500;
+    color: #94a3b8;
+    margin-left: 10px;
+    transition: color 0.2s;
+  }
+  .docs-save-status.saving { color: #f59e0b; }
+  .docs-save-status.saved { color: #10b981; }
+  .docs-save-status.error { color: #ef4444; }
+
+
+</style>
+</head>
+<body>
+
+<!-- ==================== LOGIN SCREEN ==================== -->
+<div id="loginScreen" style="display: flex;">
+  <div class="login-card">
+    <div class="login-logo"></div>
+    <div class="login-title">Docmerge</div>
+    <div class="login-subtitle">Login karke tool use karein</div>
+
+    <div class="login-field">
+      <label for="loginId">User ID</label>
+      <input type="text" id="loginId" placeholder="Apna ID likhein" autocomplete="username">
+    </div>
+
+    <div class="login-field">
+      <label for="loginPassword">Password</label>
+      <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
+    </div>
+
+    <div class="login-error" id="loginError"></div>
+
+    <button class="login-btn" id="loginBtn" onclick="handleLogin()">Login</button>
+  </div>
+</div>
+
+<!-- ==================== MAIN APP (hidden until login) ==================== -->
+<div id="appContent" style="display: none;">
+
+<div class="topbar">
+  <div class="brand">
+    <div class="logo"></div>
+    <div>
+      <div class="name">Docmerge</div>
+      <div class="tagline">Batch PDFs — swap names and words across one document and export a personalized PDF for each</div>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <span class="saved-pill" id="savedPill">Saved just now</span>
+    <button class="logout-btn" onclick="handleLogout()">Logout</button>
+  </div>
+</div>
+
+
+<div class="dashboard-tabs" id="dashboardTabs">
+  <div class="tabs-list" id="tabsList"></div>
+  <button class="tab-add-btn" id="addTabBtn" title="Naya Dashboard">+</button>
+  <button class="docs-toggle-btn" id="docsToggleBtn" title="Docs / Articles">📄 Docs</button>
+</div>
+
+<div class="docs-backdrop" id="docsBackdrop"></div>
+<div class="docs-panel" id="docsPanel">
+  <!-- Top bar like Google Docs -->
+  <div class="docs-topbar">
+    <button class="docs-topbar-back" id="docsCloseBtn" type="button" title="Back">←</button>
+    <div class="docs-topbar-icon">📄</div>
+    <div class="docs-topbar-title-wrap">
+      <input class="docs-topbar-title" id="docsEditorTitle" placeholder="Untitled document" />
+      <span class="docs-save-status" id="docsSaveStatus"></span>
+    </div>
+    <div class="docs-topbar-actions">
+      <button class="docs-save-btn" id="docsSaveBtn" type="button">Save</button>
+      <button class="docs-use-btn" id="docsUseBtn" type="button">Use in PDF</button>
+    </div>
+  </div>
+
+  <!-- Formatting toolbar -->
+  <div class="docs-toolbar" id="docsToolbar">
+    <button type="button" class="docs-tb-btn" data-cmd="undo" title="Undo">↶</button>
+    <button type="button" class="docs-tb-btn" data-cmd="redo" title="Redo">↷</button>
+    <span class="docs-tb-sep"></span>
+    <select class="docs-tb-select" id="docsStyleSelect" title="Style">
+      <option value="p">Normal text</option>
+      <option value="h1">Heading 1</option>
+      <option value="h2">Heading 2</option>
+      <option value="h3">Heading 3</option>
+    </select>
+    <span class="docs-tb-sep"></span>
+    <button type="button" class="docs-tb-btn" data-cmd="bold" title="Bold (Ctrl+B)"><b>B</b></button>
+    <button type="button" class="docs-tb-btn" data-cmd="italic" title="Italic (Ctrl+I)"><i>I</i></button>
+    <button type="button" class="docs-tb-btn" data-cmd="underline" title="Underline (Ctrl+U)"><u>U</u></button>
+    <span class="docs-tb-sep"></span>
+    <button type="button" class="docs-tb-btn" data-cmd="insertUnorderedList" title="Bullet list">• ≡</button>
+    <button type="button" class="docs-tb-btn" data-cmd="insertOrderedList" title="Numbered list">1. ≡</button>
+    <span class="docs-tb-sep"></span>
+    <button type="button" class="docs-tb-btn" data-cmd="justifyLeft" title="Align left">☰</button>
+    <button type="button" class="docs-tb-btn" data-cmd="justifyCenter" title="Align center">☰</button>
+    <button type="button" class="docs-tb-btn" data-cmd="justifyRight" title="Align right">☰</button>
+  </div>
+
+  <!-- Sidebar + page -->
+  <div class="docs-body">
+    <div class="docs-sidebar">
+      <div class="docs-sidebar-head">Document tabs</div>
+      <div class="docs-list-scroll" id="docsListItems"></div>
+      <button class="docs-add-btn" id="docsAddBtn" type="button">+ New document</button>
+    </div>
+    <div class="docs-page-area">
+      <div class="docs-page">
+        <div class="docs-editor" id="docsEditor" contenteditable="true"
+             data-placeholder="Start typing..." spellcheck="true"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="status-wrap">
+  <div class="status-card">
+    <div class="status-top">
+      <div class="title" id="batchHeadline">Batch not run yet</div>
+      <div class="meta" id="batchMeta">0 replacements · 0ms elapsed</div>
+    </div>
+    <div class="status-row">
+      <div class="chips" id="stepChips">
+        <span class="chip-step" data-step="queued">Queued</span>
+        <span class="chip-step" data-step="processing">Processing</span>
+        <span class="chip-step" data-step="generating">Generating PDFs</span>
+        <span class="chip-step" data-step="zipping">Preparing</span>
+        <span class="chip-step" data-step="ready">Ready</span>
+      </div>
+      <div class="status-counts" id="statusCounts">0/0 generated · 0 failed</div>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="step">
+      <div class="step-head">
+        <span class="step-num">1</span>
+        <span class="step-title">Word / Find &amp; Replace</span>
+        <span class="step-optional">— Optional</span>
+      </div>
+      <div id="wordRows">
+        <div class="word-row">
+          <input placeholder="find" type="text" value="americas air">
+          <input placeholder="replace with" type="text" value="copa airlines">
+          <button onclick="this.parentElement.remove()">✕</button>
+        </div>
+      <div class="word-row">
+    <input type="text" placeholder="find" value="americas air">
+    <input type="text" placeholder="replace with" value="copa airlines">
+    <button onclick="this.parentElement.remove()">✕</button></div></div>
+      <button class="link-btn" onclick="addWordRow()">+ Add another word</button>
+      <button class="full-btn outline" onclick="applyWordReplace()">Replace</button>
+      <div class="hint-small" id="wordStatus">Set the words above, then hit Replace to apply the swap.</div>
+    </div>
+
+    <div class="step">
+      <div class="step-head">
+        <span class="step-num">2</span>
+        <span class="step-title">Replacement Numbers</span>
+        <span class="step-optional">— Optional</span>
+      </div>
+      <textarea id="numberTargets" placeholder="+55198325-9118"></textarea>
+      <button class="full-btn outline" onclick="applyNumberReplace()">Preview Replace</button>
+      <div class="hint-small" id="numberStatus">No 8–20 digit number found to replace.</div>
+    </div>
+
+    <div class="step">
+      <div class="step-head">
+        <span class="step-num">3</span>
+        <span class="step-title">Original Name</span>
+      </div>
+      <input id="originalName" placeholder="e.g. arsdecaa" type="text">
+    </div>
+
+    <div class="step">
+      <div class="step-head">
+        <span class="step-num">4</span>
+        <span class="step-title">Replacement Names</span>
+      </div>
+      <textarea id="replacementNames" placeholder="Copa
+Delta"></textarea>
+    </div>
+
+    <div class="step">
+      <div class="step-head">
+        <span class="step-num">5</span>
+        <span class="step-title">Output PDF Names</span>
+      </div>
+      <textarea id="outputNames" placeholder="copa-certificate
+delta-certificate"></textarea>
+      <div class="hint-small" id="namesCountHint">0 replacement name(s) · 0 output name(s)</div>
+    </div>
+
+    <button class="create-btn" id="convertAllBtn2" onclick="convertAll()">⬇️ Generate All &amp; Download as ZIP</button>
+  </div>
+
+  <div class="main">
+    <div class="field-card">
+      <!-- Header: Title label + Toolbar + Download (all same row) -->
+      <div class="field-head">
+        <div class="field-head-left">
+          <span class="step-num">1</span>
+          <span class="field-title">Title &amp; Description</span>
+        </div>
+
+        <div class="toolbar">
+          <select id="styleSelect" title="Text style">
+            <option>Normal text</option>
+            <option>Heading 1</option>
+            <option>Heading 2</option>
+            <option>Heading 3</option>
+          </select>
+
+          <select id="fontSelect" title="Font">
+            <option>Arial</option>
+            <option>Times New Roman</option>
+            <option>Georgia</option>
+            <option>Courier New</option>
+            <option>Verdana</option>
+          </select>
+
+          <div class="size-ctrl">
+            <button type="button" onclick="changeFontSize(-1)">−</button>
+            <span id="fontSizeLabel">11</span>
+            <button type="button" onclick="changeFontSize(1)">+</button>
+          </div>
+
+          <div class="sep"></div>
+
+          <button type="button" id="btnBold" onclick="toggleFormat(this)" title="Bold"><b>B</b></button>
+          <button type="button" id="btnItalic" onclick="toggleFormat(this)" title="Italic"><i>I</i></button>
+          <button type="button" id="btnUnderline" onclick="toggleFormat(this)" title="Underline"><u>U</u></button>
+
+          <div class="sep"></div>
+
+          <button type="button" class="color-btn" title="Text color">
+            <input type="color" id="textColor" value="#0f172a" onchange="applyColor(this.value)">
+          </button>
+        </div>
+
+        <div class="pdf-progress-wrap">
+          <span class="pdf-progress-pill" id="pdfProgressPill" title="Batch progress">
+            <span class="pp-count" id="pdfProgressCount">0/0</span>
+            <span class="pp-label" id="pdfProgressLabel">done</span>
+          </span>
+          <button class="btn-primary" onclick="downloadSinglePreview()">Download PDF</button>
+        </div>
+      </div>
+
+      <input id="titleInput" oninput="livePreview()" placeholder="e.g. Certificate of Appreciation" type="text">
+
+      <div class="slider-row">
+        <input id="titleFontSize" max="40" min="12" oninput="livePreview()" type="range" value="20">
+        <span class="pt-label" id="titleFontLabel">20pt</span>
+      </div>
+
+      <textarea id="descInput" oninput="livePreview()" placeholder="Exactly what you paste here is exactly what appears in every PDF."></textarea>
+    </div>
+
+    <div class="field-card" style="text-align:center;">
+      <button class="btn-primary" id="convertAllBtn" onclick="convertAll()" style="width:100%; padding:16px; font-size:1rem;">
+        ⚙️ Convert All &amp; Download as ZIP
+      </button>
+      <div class="field-hint" id="convertAllStatus">
+        Word replace → Number replace → sabhi names ke PDFs banayega, phir sabko ek ZIP file me pack karke download karega.
+      </div>
+    </div>
+
+    <div class="field-card" id="fileListCard" style="display:none;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; flex-wrap:wrap;">
+        <div class="field-title" style="margin:0;">Individual PDFs</div>
+        <button class="btn-primary" id="downloadAllZipBtn" onclick="downloadCurrentTabZip()" style="padding:10px 18px;">
+          ⬇️ Download All as ZIP
+        </button>
+      </div>
+      <div id="fileListRows"></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end #appContent -->
+
+<script>
+/* ============================================================
+   LOGIN CREDENTIALS — yahan se change kar sakte ho
+   ============================================================ */
+const VALID_CREDENTIALS = [
+  { id: "admin", password: "admin@321" },
+];
+
+const LOGIN_STORAGE_KEY = "docmerge_logged_in";
+
+function isLoggedIn() {
+  return localStorage.getItem(LOGIN_STORAGE_KEY) === "true";
+}
+
+function setLoggedIn(value) {
+  if (value) {
+    localStorage.setItem(LOGIN_STORAGE_KEY, "true");
+  } else {
+    localStorage.removeItem(LOGIN_STORAGE_KEY);
+  }
+}
+
+
+/* ============================================================
+   MULTI-DASHBOARD TABS  — each tab is fully independent
+   ============================================================ */
+let dashboards = {};
+let activeTabId = null;
+let tabCounter = 0;
+
+function createEmptyState(name) {
+  return {
+    tabName: name || '',
+    title: '',
+    desc: '',
+    titleFontSize: '20',
+    originalName: '',
+    replacementNames: '',
+    outputNames: '',
+    numberTargets: '',
+    wordRows: [{ find: '', replace: '' }],
+    generatedFiles: []
+  };
+}
+
+function escapeHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function getCurrentState() {
+  const wordRows = [];
+  document.querySelectorAll('#wordRows .word-row').forEach(function (row) {
+    const inputs = row.querySelectorAll('input');
+    if (inputs.length >= 2) {
+      wordRows.push({ find: inputs[0].value, replace: inputs[1].value });
+    }
+  });
+  var prevName = '';
+  if (activeTabId && dashboards[activeTabId] && dashboards[activeTabId].tabName) {
+    prevName = dashboards[activeTabId].tabName;
+  }
+  return {
+    tabName: prevName,
+    title: (document.getElementById('titleInput') || {}).value || '',
+    desc: (document.getElementById('descInput') || {}).value || '',
+    titleFontSize: (document.getElementById('titleFontSize') || {}).value || '20',
+    originalName: (document.getElementById('originalName') || {}).value || '',
+    replacementNames: (document.getElementById('replacementNames') || {}).value || '',
+    outputNames: (document.getElementById('outputNames') || {}).value || '',
+    numberTargets: (document.getElementById('numberTargets') || {}).value || '',
+    wordRows: wordRows.length ? wordRows : [{ find: '', replace: '' }],
+    generatedFiles: (typeof generatedFiles !== 'undefined' && Array.isArray(generatedFiles)) ? generatedFiles.slice() : []
+  };
+}
+
+function applyState(state) {
+  if (!state) state = createEmptyState();
+  var setVal = function (id, val) {
+    var el = document.getElementById(id);
+    if (el) el.value = (val != null) ? val : '';
+  };
+  setVal('titleInput', state.title);
+  setVal('descInput', state.desc);
+  setVal('titleFontSize', state.titleFontSize || '20');
+  setVal('originalName', state.originalName);
+  setVal('replacementNames', state.replacementNames);
+  setVal('outputNames', state.outputNames);
+  setVal('numberTargets', state.numberTargets);
+
+  var container = document.getElementById('wordRows');
+  if (container) {
+    container.innerHTML = '';
+    var rows = (state.wordRows && state.wordRows.length) ? state.wordRows : [{ find: '', replace: '' }];
+    rows.forEach(function (row) {
+      var div = document.createElement('div');
+      div.className = 'word-row';
+      div.innerHTML =
+        '<input placeholder="find" type="text" value="' + escapeHtml(row.find) + '">' +
+        '<input placeholder="replace with" type="text" value="' + escapeHtml(row.replace) + '">' +
+        '<button onclick="this.parentElement.remove()">✕</button>';
+      container.appendChild(div);
+    });
+  }
+
+  // Restore this tab's generated files (independent per tab)
+  if (typeof generatedFiles !== 'undefined') {
+    generatedFiles = (state.generatedFiles && Array.isArray(state.generatedFiles))
+      ? state.generatedFiles.slice()
+      : [];
+  }
+  try {
+    if (typeof renderFileList === 'function') renderFileList();
+  } catch (e) {}
+
+  // Reset batch status UI for this tab
+  var headline = document.getElementById('batchHeadline');
+  if (headline) headline.textContent = 'Batch not run yet';
+  var meta = document.getElementById('batchMeta');
+  if (meta) meta.textContent = '0 replacements · 0ms elapsed';
+  var counts = document.getElementById('statusCounts');
+  if (counts) counts.textContent = '0/0 generated · 0 failed';
+  document.querySelectorAll('#stepChips .chip-step').forEach(function (c) {
+    c.classList.remove('done', 'active');
+  });
+
+  try {
+    if (typeof updateNamesHint === 'function') updateNamesHint();
+    else if (typeof updateNamesCountHint === 'function') updateNamesCountHint();
+  } catch (e) {}
+
+  var fontLabel = document.getElementById('titleFontLabel') || document.getElementById('fontSizeLabel');
+  if (fontLabel) fontLabel.textContent = (state.titleFontSize || '20') + 'pt';
+
+  if (typeof livePreview === 'function') {
+    try { livePreview(); } catch (e) {}
+  }
+}
+
+function getOrderedTabIds() {
+  return Object.keys(dashboards).sort(function (a, b) {
+    return (parseInt(a.replace('tab', ''), 10) || 0) - (parseInt(b.replace('tab', ''), 10) || 0);
+  });
+}
+
+function renumberTabs() {
+  var ordered = getOrderedTabIds();
+  var newMap = {};
+  var newActive = null;
+  ordered.forEach(function (oldId, i) {
+    var newId = 'tab' + (i + 1);
+    newMap[newId] = dashboards[oldId];
+    if (oldId === activeTabId) newActive = newId;
+  });
+  dashboards = newMap;
+  activeTabId = newActive || (Object.keys(newMap)[0] || null);
+  tabCounter = ordered.length;
+}
+
+function saveActiveTab() {
+  if (activeTabId && dashboards[activeTabId]) {
+    var name = dashboards[activeTabId].tabName || '';
+    dashboards[activeTabId] = getCurrentState();
+    dashboards[activeTabId].tabName = name;
+  }
+}
+
+function renderTabs() {
+  var list = document.getElementById('tabsList');
+  if (!list) return;
+  list.innerHTML = '';
+  var ordered = getOrderedTabIds();
+  ordered.forEach(function (id, i) {
+    var num = i + 1;
+    var state = dashboards[id] || {};
+    var customName = (state.tabName || '').trim();
+    var isGen = (typeof generatingTabs !== 'undefined' && generatingTabs.has(id));
+    var displayName = (isGen ? '⏳ ' : '') + (customName || String(num));
+
+    var tab = document.createElement('div');
+    tab.className = 'tab-item' + (id === activeTabId ? ' active' : '');
+    tab.dataset.id = id;
+    tab.title = isGen
+      ? 'Generating PDFs...'
+      : (customName ? customName : ('Tab ' + num));
+
+    var nameSpan = document.createElement('span');
+    nameSpan.className = 'tab-name';
+    nameSpan.textContent = displayName;
+    nameSpan.onclick = function () { switchTab(id); };
+    nameSpan.ondblclick = function (e) {
+      e.stopPropagation();
+      startRenameTab(id, nameSpan);
+    };
+    tab.appendChild(nameSpan);
+
+    if (ordered.length > 1) {
+      var closeBtn = document.createElement('button');
+      closeBtn.className = 'tab-close';
+      closeBtn.innerHTML = '×';
+      closeBtn.title = 'Close';
+      closeBtn.onclick = function (e) {
+        e.stopPropagation();
+        closeTab(id);
+      };
+      tab.appendChild(closeBtn);
+    }
+    list.appendChild(tab);
+  });
+}
+
+function startRenameTab(tabId, nameSpan) {
+  if (!dashboards[tabId]) return;
+  var current = (dashboards[tabId].tabName || '').trim();
+  if (!current) current = '';
+  var input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'tab-name-input';
+  input.value = current;
+  input.placeholder = 'Tab name...';
+  nameSpan.replaceWith(input);
+  input.focus();
+  input.select();
+
+  function finish() {
+    var newName = (input.value || '').trim();
+    if (activeTabId === tabId) saveActiveTab();
+    dashboards[tabId].tabName = newName;
+    renderTabs();
+  }
+
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); finish(); }
+    if (e.key === 'Escape') { renderTabs(); }
+  });
+  input.addEventListener('blur', finish);
+}
+
+function switchTab(tabId) {
+  if (!tabId || !dashboards[tabId]) return;
+  if (tabId === activeTabId) return;
+
+  // 1. Save current tab completely
+  saveActiveTab();
+
+  // 2. Switch
+  activeTabId = tabId;
+
+  // 3. Load the other tab's state into the form
+  applyState(dashboards[tabId] || createEmptyState());
+
+  // 4. Restore button state for this tab (busy if still generating)
+  var btn = document.getElementById('convertAllBtn');
+  var btn2 = document.getElementById('convertAllBtn2');
+  var isBusy = generatingTabs.has(tabId);
+  if (btn) {
+    btn.disabled = isBusy;
+    btn.textContent = isBusy ? '⏳ Converting...' : '⚙️ Convert All & Download as ZIP';
+  }
+  if (btn2) btn2.disabled = isBusy;
+
+  // 5. Update tab UI
+  renderTabs();
+}
+
+function addNewTab() {
+  // Save whatever is currently open
+  saveActiveTab();
+
+  var ordered = getOrderedTabIds();
+  tabCounter = ordered.length + 1;
+  var id = 'tab' + tabCounter;
+  dashboards[id] = createEmptyState('');
+  activeTabId = id;
+  applyState(dashboards[id]);
+  renderTabs();
+}
+
+function closeTab(tabId) {
+  if (Object.keys(dashboards).length <= 1) return;
+
+  // Save current work first (even if closing a different tab)
+  saveActiveTab();
+
+  delete dashboards[tabId];
+  renumberTabs();
+
+  if (activeTabId && dashboards[activeTabId]) {
+    applyState(dashboards[activeTabId]);
+  }
+  renderTabs();
+}
+
+function initDashboards() {
+  if (activeTabId) return;
+  tabCounter = 1;
+  var id = 'tab1';
+  dashboards[id] = getCurrentState();
+  dashboards[id].tabName = '';
+  activeTabId = id;
+  renderTabs();
+  var addBtn = document.getElementById('addTabBtn');
+  if (addBtn) addBtn.onclick = addNewTab;
+  initDocsSystem();
+}
+
+/* ============================================================
+   DOCS / ARTICLES SYSTEM  — Google Docs style
+   ============================================================ */
+const DOCS_STORAGE_KEY = 'docmerge_docs_articles';
+let docsArticles = [];
+let activeDocId = null;
+let docsSaveTimer = null;
+let docsSaveStatusTimer = null;
+
+function loadDocsFromStorage() {
+  try {
+    const raw = localStorage.getItem(DOCS_STORAGE_KEY);
+    docsArticles = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(docsArticles)) docsArticles = [];
+  } catch (e) { docsArticles = []; }
+}
+
+function saveDocsToStorage() {
+  try { localStorage.setItem(DOCS_STORAGE_KEY, JSON.stringify(docsArticles)); }
+  catch (e) { console.warn('Could not save docs', e); throw e; }
+}
+
+function setDocsSaveStatus(text, cls) {
+  const el = document.getElementById('docsSaveStatus');
+  if (!el) return;
+  el.textContent = text || '';
+  el.className = 'docs-save-status' + (cls ? ' ' + cls : '');
+}
+
+function openDocsPanel() {
+  document.getElementById('docsPanel').classList.add('open');
+  document.getElementById('docsBackdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  renderDocsList();
+  // focus editor
+  setTimeout(function () {
+    const ed = document.getElementById('docsEditor');
+    if (ed) ed.focus();
+  }, 100);
+}
+
+function closeDocsPanel() {
+  saveCurrentDocFromEditor(false);
+  document.getElementById('docsPanel').classList.remove('open');
+  document.getElementById('docsBackdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function renderDocsList() {
+  const container = document.getElementById('docsListItems');
+  if (!container) return;
+  container.innerHTML = '';
+  if (docsArticles.length === 0) {
+    container.innerHTML = '<div class="docs-empty">No documents yet.<br>Click + New document</div>';
+    return;
+  }
+  docsArticles.forEach(function (doc) {
+    const item = document.createElement('div');
+    item.className = 'doc-item' + (doc.id === activeDocId ? ' active' : '');
+    item.innerHTML =
+      '<span class="doc-item-icon">📄</span>' +
+      '<span class="doc-item-name">' + escapeHtml(doc.title || 'Untitled document') + '</span>' +
+      '<button class="doc-item-del" title="Delete" type="button">×</button>';
+    item.querySelector('.doc-item-name').onclick = function () { selectDoc(doc.id); };
+    item.querySelector('.doc-item-icon').onclick = function () { selectDoc(doc.id); };
+    item.querySelector('.doc-item-del').onclick = function (e) {
+      e.stopPropagation();
+      deleteDoc(doc.id);
+    };
+    container.appendChild(item);
+  });
+}
+
+function selectDoc(id) {
+  saveCurrentDocFromEditor(false);
+  activeDocId = id;
+  const doc = docsArticles.find(function (d) { return d.id === id; });
+  if (doc) {
+    document.getElementById('docsEditorTitle').value = doc.title || '';
+    const ed = document.getElementById('docsEditor');
+    // content is stored as HTML
+    ed.innerHTML = doc.content || '';
+  }
+  renderDocsList();
+  setDocsSaveStatus('', '');
+}
+
+function addNewDoc() {
+  saveCurrentDocFromEditor(false);
+  const id = 'doc_' + Date.now();
+  const doc = { id: id, title: 'Untitled document', content: '', updated: Date.now() };
+  docsArticles.unshift(doc);
+  activeDocId = id;
+  document.getElementById('docsEditorTitle').value = 'Untitled document';
+  document.getElementById('docsEditor').innerHTML = '';
+  saveDocsToStorage();
+  renderDocsList();
+  document.getElementById('docsEditorTitle').focus();
+  document.getElementById('docsEditorTitle').select();
+  setDocsSaveStatus('Saved', 'saved');
+}
+
+function saveCurrentDocFromEditor(showAlert) {
+  const titleEl = document.getElementById('docsEditorTitle');
+  const ed = document.getElementById('docsEditor');
+  if (!titleEl || !ed) return;
+
+  const titleVal = (titleEl.value || '').trim();
+  const contentVal = ed.innerHTML || '';
+  const textOnly = (ed.innerText || '').trim();
+
+  if (!activeDocId) {
+    if (!titleVal && !textOnly) return;
+    const id = 'doc_' + Date.now();
+    docsArticles.unshift({ id: id, title: 'Untitled document', content: '', updated: Date.now() });
+    activeDocId = id;
+  }
+
+  const doc = docsArticles.find(function (d) { return d.id === activeDocId; });
+  if (!doc) return;
+
+  doc.title = titleVal || 'Untitled document';
+  doc.content = contentVal;
+  doc.updated = Date.now();
+
+  try {
+    saveDocsToStorage();
+    setDocsSaveStatus('Saved to Drive', 'saved');
+    if (docsSaveStatusTimer) clearTimeout(docsSaveStatusTimer);
+    docsSaveStatusTimer = setTimeout(function () {
+      setDocsSaveStatus('All changes saved', 'saved');
+    }, 1500);
+  } catch (e) {
+    setDocsSaveStatus('Save failed', 'error');
+  }
+  renderDocsList();
+
+  if (showAlert) {
+    const btn = document.getElementById('docsSaveBtn');
+    if (btn) {
+      const old = btn.textContent;
+      btn.textContent = 'Saved ✓';
+      setTimeout(function () { btn.textContent = old; }, 1200);
+    }
+  }
+}
+
+function scheduleDocsAutoSave() {
+  setDocsSaveStatus('Saving…', 'saving');
+  if (docsSaveTimer) clearTimeout(docsSaveTimer);
+  docsSaveTimer = setTimeout(function () {
+    saveCurrentDocFromEditor(false);
+  }, 500);
+}
+
+function deleteDoc(id) {
+  if (!confirm('Move this document to trash?')) return;
+  docsArticles = docsArticles.filter(function (d) { return d.id !== id; });
+  if (activeDocId === id) {
+    activeDocId = docsArticles.length ? docsArticles[0].id : null;
+    if (activeDocId) {
+      const doc = docsArticles.find(function (d) { return d.id === activeDocId; });
+      document.getElementById('docsEditorTitle').value = doc.title || '';
+      document.getElementById('docsEditor').innerHTML = doc.content || '';
+    } else {
+      document.getElementById('docsEditorTitle').value = '';
+      document.getElementById('docsEditor').innerHTML = '';
+    }
+  }
+  saveDocsToStorage();
+  renderDocsList();
+}
+
+function useDocInPdf() {
+  saveCurrentDocFromEditor(false);
+  var ed = document.getElementById('docsEditor');
+  var title = (document.getElementById('docsEditorTitle').value || '').trim();
+  var text = (ed.innerText || '').trim();
+  if (!text && !title) {
+    alert('Pehle kuch content likho.');
+    return;
+  }
+
+  // Does current tab already have work?
+  var curTitle = (document.getElementById('titleInput') || {}).value || '';
+  var curDesc = (document.getElementById('descInput') || {}).value || '';
+  var hasExistingWork =
+    (curTitle.trim() && curTitle.trim() !== 'Untitled') ||
+    (curDesc.trim().length > 0);
+
+  // Always save current tab first
+  saveActiveTab();
+
+  // If busy → open a fresh tab so we don't overwrite existing work
+  if (hasExistingWork) {
+    var ordered = getOrderedTabIds();
+    tabCounter = ordered.length + 1;
+    var newId = 'tab' + tabCounter;
+    dashboards[newId] = createEmptyState(title || '');
+    activeTabId = newId;
+    applyState(dashboards[newId]);
+  }
+
+  // Put Docs content into the active tab
+  var descEl = document.getElementById('descInput');
+  if (descEl) descEl.value = text || title;
+  var titleEl = document.getElementById('titleInput');
+  if (titleEl) titleEl.value = title || '';
+
+  // Remember tab name + save state
+  if (activeTabId && dashboards[activeTabId]) {
+    dashboards[activeTabId] = getCurrentState();
+    dashboards[activeTabId].tabName = title || '';
+  }
+
+  renderTabs();
+  closeDocsPanel();
+
+  var pill = document.getElementById('savedPill');
+  if (pill) {
+    pill.textContent = hasExistingWork
+      ? '📄 Doc loaded in new tab'
+      : '📄 Doc loaded into PDF';
+    setTimeout(function () { pill.textContent = 'Saved just now'; }, 2500);
+  }
+  if (typeof livePreview === 'function') livePreview();
+}
+
+function docsExec(cmd, val) {
+  document.getElementById('docsEditor').focus();
+  document.execCommand(cmd, false, val || null);
+  scheduleDocsAutoSave();
+}
+
+function docsApplyBlockStyle(tag) {
+  document.getElementById('docsEditor').focus();
+  if (tag === 'p') {
+    document.execCommand('formatBlock', false, 'p');
+  } else {
+    document.execCommand('formatBlock', false, tag);
+  }
+  scheduleDocsAutoSave();
+}
+
+function initDocsToolbar() {
+  const toolbar = document.getElementById('docsToolbar');
+  if (!toolbar) return;
+
+  toolbar.querySelectorAll('.docs-tb-btn[data-cmd]').forEach(function (btn) {
+    btn.addEventListener('mousedown', function (e) {
+      e.preventDefault(); // keep selection
+      const cmd = btn.getAttribute('data-cmd');
+      docsExec(cmd);
+    });
+  });
+
+  const styleSel = document.getElementById('docsStyleSelect');
+  if (styleSel) {
+    styleSel.addEventListener('change', function () {
+      docsApplyBlockStyle(styleSel.value);
+    });
+  }
+}
+
+function initDocsSystem() {
+  loadDocsFromStorage();
+
+  document.getElementById('docsToggleBtn').onclick = openDocsPanel;
+  document.getElementById('docsCloseBtn').onclick = closeDocsPanel;
+  document.getElementById('docsBackdrop').onclick = closeDocsPanel;
+  document.getElementById('docsAddBtn').onclick = addNewDoc;
+  document.getElementById('docsSaveBtn').onclick = function () { saveCurrentDocFromEditor(true); };
+  document.getElementById('docsUseBtn').onclick = useDocInPdf;
+
+  initDocsToolbar();
+
+  if (docsArticles.length > 0) {
+    activeDocId = docsArticles[0].id;
+    document.getElementById('docsEditorTitle').value = docsArticles[0].title || '';
+    document.getElementById('docsEditor').innerHTML = docsArticles[0].content || '';
+  } else {
+    // start with one empty doc ready
+    addNewDoc();
+  }
+
+  // Auto-save like Google Docs
+  document.getElementById('docsEditorTitle').addEventListener('input', scheduleDocsAutoSave);
+  document.getElementById('docsEditor').addEventListener('input', scheduleDocsAutoSave);
+
+  document.getElementById('docsEditorTitle').addEventListener('blur', function () {
+    if (docsSaveTimer) { clearTimeout(docsSaveTimer); docsSaveTimer = null; }
+    saveCurrentDocFromEditor(false);
+  });
+  document.getElementById('docsEditor').addEventListener('blur', function () {
+    if (docsSaveTimer) { clearTimeout(docsSaveTimer); docsSaveTimer = null; }
+    saveCurrentDocFromEditor(false);
+  });
+
+  // Keyboard shortcuts
+  document.getElementById('docsEditor').addEventListener('keydown', function (e) {
+    if (e.ctrlKey || e.metaKey) {
+      if (e.key === 'b') { e.preventDefault(); docsExec('bold'); }
+      else if (e.key === 'i') { e.preventDefault(); docsExec('italic'); }
+      else if (e.key === 'u') { e.preventDefault(); docsExec('underline'); }
+      else if (e.key === 's') { e.preventDefault(); saveCurrentDocFromEditor(true); }
+    }
+  });
+}
+
+
+function showApp() {
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("appContent").style.display = "block";
+  initDashboards();
+  // Preload fonts in background so first Generate is fast
+  loadFonts().catch(function () {});
+}
+
+function showLogin() {
+  document.getElementById("loginScreen").style.display = "flex";
+  document.getElementById("appContent").style.display = "none";
+  document.getElementById("loginId").value = "";
+  document.getElementById("loginPassword").value = "";
+  document.getElementById("loginError").textContent = "";
+}
+
+function handleLogin() {
+  const id = document.getElementById("loginId").value.trim();
+  const password = document.getElementById("loginPassword").value;
+  const errorEl = document.getElementById("loginError");
+  const btn = document.getElementById("loginBtn");
+
+  if (!id || !password) {
+    errorEl.textContent = "ID aur Password dono bharo.";
+    return;
+  }
+
+  const valid = VALID_CREDENTIALS.some(
+    (c) => c.id === id && c.password === password
+  );
+
+  if (valid) {
+    errorEl.textContent = "";
+    btn.textContent = "Logging in...";
+    btn.disabled = true;
+    setTimeout(() => {
+      setLoggedIn(true);
+      showApp();
+      btn.textContent = "Login";
+      btn.disabled = false;
+    }, 400);
+  } else {
+    errorEl.textContent = "Galat ID ya Password. Phir se try karo.";
+    document.getElementById("loginPassword").value = "";
+    document.getElementById("loginPassword").focus();
+  }
+}
+
+function handleLogout() {
+  setLoggedIn(false);
+  showLogin();
+}
+
+// Enter key se bhi login
+document.addEventListener("DOMContentLoaded", () => {
+  if (isLoggedIn()) {
+    showApp();
+  } else {
+    showLogin();
+  }
+
+  const pwInput = document.getElementById("loginPassword");
+  const idInput = document.getElementById("loginId");
+  if (pwInput) {
+    pwInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") handleLogin();
+    });
+  }
+  if (idInput) {
+    idInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        document.getElementById("loginPassword").focus();
+      }
+    });
+  }
+});
+
+/* ============================================================
+   ORIGINAL TOOL CODE (unchanged)
+   ============================================================ */
+const { PDFDocument, rgb } = PDFLib;
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+let generatedFiles = [];
+let currentFontSize = 11;
+
+function changeFontSize(delta) {
+  currentFontSize = Math.max(8, Math.min(36, currentFontSize + delta));
+  document.getElementById('fontSizeLabel').textContent = currentFontSize;
+  document.getElementById('descInput').style.fontSize = currentFontSize + 'px';
+}
+function toggleFormat(btn) { btn.classList.toggle('active'); }
+function applyColor(color) { document.getElementById('descInput').style.color = color; }
+document.getElementById('fontSelect').addEventListener('change', function() {
+  document.getElementById('descInput').style.fontFamily = this.value;
+});
+
+let fontsReady = null;
+async function loadFonts(){
+  if(fontsReady) return fontsReady;
+  fontsReady = (async () => {
+    const [sansBytes, boldBytes] = await Promise.all([
+      fetch('https://cdn.jsdelivr.net/gh/googlefonts/noto-fonts@main/hinted/ttf/NotoSans/NotoSans-Regular.ttf').then(r=>r.arrayBuffer()),
+      fetch('https://cdn.jsdelivr.net/gh/googlefonts/noto-fonts@main/hinted/ttf/NotoSans/NotoSans-Bold.ttf').then(r=>r.arrayBuffer())
+    ]);
+    return { sansBytes, boldBytes };
+  })();
+  return fontsReady;
+}
+
+const emojiImageCache = new Map();
+function toCodepoints(str){
+  const cps = [];
+  for(const ch of Array.from(str)) cps.push(ch.codePointAt(0).toString(16));
+  return cps.join('-');
+}
+async function fetchEmojiPng(cluster){
+  const key = toCodepoints(cluster);
+  if(emojiImageCache.has(key)) return emojiImageCache.get(key);
+  const url = `https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/72x72/${key}.png`;
+  try{
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('not found');
+    const bytes = await res.arrayBuffer();
+    emojiImageCache.set(key, bytes);
+    return bytes;
+  }catch(e){
+    emojiImageCache.set(key, null);
+    return null;
+  }
+}
+const EMOJI_TEST = /\p{Extended_Pictographic}/u;
+const GLYPH_FONT_STACK = "sans-serif";
+const GLYPH_REF_PX = 100;
+let _measureCanvas = null;
+function getMeasureCtx(){
+  if(!_measureCanvas) _measureCanvas = document.createElement('canvas');
+  return _measureCanvas.getContext('2d');
+}
+function measureGlyphWidthAtSize(str, size, bold){
+  const ctx = getMeasureCtx();
+  ctx.font = `${bold ? 'bold ' : ''}${size}px ${GLYPH_FONT_STACK}`;
+  return ctx.measureText(str).width;
+}
+let fkFontRegular = null, fkFontBold = null;
+function ensureFontkitCoverage(sansBytes, boldBytes){
+  if(!fkFontRegular) fkFontRegular = fontkit.create(new Uint8Array(sansBytes.slice(0)));
+  if(!fkFontBold) fkFontBold = fontkit.create(new Uint8Array(boldBytes.slice(0)));
+}
+const glyphSupportCache = new WeakMap();
+function fontHasGlyph(fkFont, codePoint){
+  let cache = glyphSupportCache.get(fkFont);
+  if(!cache){ cache = new Map(); glyphSupportCache.set(fkFont, cache); }
+  if(cache.has(codePoint)) return cache.get(codePoint);
+  let result = false;
+  try{
+    const glyph = fkFont.glyphForCodePoint(codePoint);
+    result = !!(glyph && glyph.id !== 0);
+  }catch(e){ result = false; }
+  cache.set(codePoint, result);
+  return result;
+}
+function classifyCluster(cluster, fkFont){
+  if(EMOJI_TEST.test(cluster) && cluster.trim() !== '') return 'emoji';
+  if(cluster.trim() === '') return 'text';
+  if(!fkFont) return 'text';
+  for(const ch of Array.from(cluster)){
+    const cp = ch.codePointAt(0);
+    if(cp < 0x80) continue;
+    if(!fontHasGlyph(fkFont, cp)) return 'unsupported';
+  }
+  return 'text';
+}
+function colorToCss(color){
+  const r = Math.round(((color && color.red) || 0) * 255);
+  const g = Math.round(((color && color.green) || 0) * 255);
+  const b = Math.round(((color && color.blue) || 0) * 255);
+  return `rgb(${r},${g},${b})`;
+}
+async function rasterizeGlyphToPng(str, bold, colorCss){
+  const px = GLYPH_REF_PX;
+  const ctx = getMeasureCtx();
+  const fontStr = `${bold ? 'bold ' : ''}${px}px ${GLYPH_FONT_STACK}`;
+  ctx.font = fontStr;
+  const textWidthPx = Math.max(1, ctx.measureText(str).width);
+  const canvasHeightPx = Math.round(px * 1.4);
+  const baselineYpx = Math.round(px * 1.0);
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.ceil(textWidthPx) + 2;
+  canvas.height = canvasHeightPx;
+  const c2 = canvas.getContext('2d');
+  c2.font = fontStr;
+  c2.textBaseline = 'alphabetic';
+  c2.fillStyle = colorCss;
+  c2.clearRect(0, 0, canvas.width, canvas.height);
+  c2.fillText(str, 1, baselineYpx);
+  return new Promise(resolve=>{
+    canvas.toBlob(blob=>{
+      if(!blob){ resolve(null); return; }
+      const reader = new FileReader();
+      reader.onload = () => resolve({
+        dataUrl: reader.result, textWidthPx,
+        canvasWidthPx: canvas.width, canvasHeightPx, baselineYpx
+      });
+      reader.readAsDataURL(blob);
+    }, 'image/png');
+  });
+}
+function dataUrlToBytes(dataUrl){
+  const base64 = dataUrl.split(',')[1];
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+const embeddedGlyphCache = new WeakMap();
+async function embedGlyphOnce(pdfDoc, str, bold, color){
+  let cache = embeddedGlyphCache.get(pdfDoc);
+  if(!cache){ cache = new Map(); embeddedGlyphCache.set(pdfDoc, cache); }
+  const colorCss = colorToCss(color);
+  const key = str + '|' + (!!bold) + '|' + colorCss;
+  if(cache.has(key)) return cache.get(key);
+  const raster = await rasterizeGlyphToPng(str, bold, colorCss);
+  if(!raster){ cache.set(key, null); return null; }
+  try{
+    const img = await pdfDoc.embedPng(dataUrlToBytes(raster.dataUrl));
+    const result = { img, textWidthPx: raster.textWidthPx, canvasHeightPx: raster.canvasHeightPx, baselineYpx: raster.baselineYpx };
+    cache.set(key, result);
+    return result;
+  }catch(e){
+    cache.set(key, null);
+    return null;
+  }
+}
+
+var _touchSavedTimer = null;
+function touchSaved(){
+  if (_touchSavedTimer) return;
+  _touchSavedTimer = setTimeout(function () {
+    _touchSavedTimer = null;
+    var el = document.getElementById('savedPill');
+    if (!el) return;
+    var t = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    el.textContent = 'Saved ' + t;
+  }, 400);
+}
+document.addEventListener('input', touchSaved);
+
+function livePreview(){
+  const size = document.getElementById('titleFontSize').value;
+  document.getElementById('titleFontLabel').textContent = size + 'pt';
+}
+document.getElementById('titleInput').value = 'Certificate of Appreciation';
+document.getElementById('descInput').value = 'This certificate is proudly presented to {name} in recognition of outstanding contribution. 🎉\n\nContact: 9876543210';
+livePreview();
+
+function addWordRow(find='', replace=''){
+  const wrap = document.getElementById('wordRows');
+  const row = document.createElement('div');
+  row.className='word-row';
+  row.innerHTML = `
+    <input type="text" placeholder="find" value="${find}">
+    <input type="text" placeholder="replace with" value="${replace}">
+    <button onclick="this.parentElement.remove()">✕</button>`;
+  wrap.appendChild(row);
+}
+addWordRow('americas air','copa airlines');
+
+function applyWordReplace(){
+  const rows = document.querySelectorAll('#wordRows .word-row');
+  let title = document.getElementById('titleInput').value;
+  let desc = document.getElementById('descInput').value;
+  let count = 0;
+  rows.forEach(row=>{
+    const inputs = row.querySelectorAll('input');
+    const find = inputs[0].value;
+    const replace = inputs[1].value;
+    if(!find) return;
+    const pattern = find.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    const re = new RegExp(pattern, 'gi');
+    const m1 = (title.match(re)||[]).length;
+    const m2 = (desc.match(re)||[]).length;
+    count += m1+m2;
+    title = title.replace(re, replace);
+    desc = desc.replace(re, replace);
+  });
+  document.getElementById('titleInput').value = title;
+  document.getElementById('descInput').value = desc;
+  document.getElementById('wordStatus').textContent = `${count} occurrences replaced.`;
+  livePreview();
+}
+
+const NUMBER_PATTERN = /\+?\d(?:[^\da-zA-Z\u0900-\u097F]{0,3}\d){7,19}/gu;
+function detectNumberMatches(text){
+  const broad = text.match(NUMBER_PATTERN) || [];
+  return broad.filter(m => {
+    const d = m.replace(/\D/gu,'').length;
+    return d>=8 && d<=20;
+  });
+}
+function replaceNumberSkeleton(match, replacementDigits){
+  let ptr = 0; let out = '';
+  for(const ch of Array.from(match)){
+    if(/\d/u.test(ch)){
+      if(ptr < replacementDigits.length){ out += replacementDigits[ptr]; ptr++; }
+    } else { out += ch; }
+  }
+  if(ptr < replacementDigits.length) out += replacementDigits.slice(ptr);
+  return out;
+}
+function applyNumberReplace(){
+  const targetsRaw = document.getElementById('numberTargets').value;
+  const targets = targetsRaw.split('\n').map(t=>t.trim()).filter(Boolean).map(t=>t.replace(/\D/g,''));
+  let title = document.getElementById('titleInput').value;
+  let desc = document.getElementById('descInput').value;
+  const matches = detectNumberMatches(title+'\n'+desc);
+  if(matches.length===0){
+    document.getElementById('numberStatus').textContent = 'No 8–20 digit number found to replace.';
+    return;
+  }
+  if(targets.length===0){
+    document.getElementById('numberStatus').textContent = `${matches.length} number(s) detected — add at least one replacement above.`;
+    return;
+  }
+  let idx = 0;
+  function replaceAllIn(text){
+    return text.replace(NUMBER_PATTERN, (m)=>{
+      const d = m.replace(/\D/gu,'').length;
+      if(d<8 || d>20) return m;
+      const rep = replaceNumberSkeleton(m, targets[idx % targets.length]);
+      idx++; return rep;
+    });
+  }
+  title = replaceAllIn(title); desc = replaceAllIn(desc);
+  document.getElementById('titleInput').value = title;
+  document.getElementById('descInput').value = desc;
+  document.getElementById('numberStatus').textContent = `All ${matches.length} number(s) replaced.`;
+  livePreview();
+}
+
+function updateNamesHint(){
+  const names = document.getElementById('replacementNames').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const outs = document.getElementById('outputNames').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  document.getElementById('namesCountHint').textContent = `${names.length} replacement name(s) · ${outs.length} output name(s)`;
+}
+['input','keyup','change','paste'].forEach(evt=>{
+  document.getElementById('replacementNames').addEventListener(evt, ()=>setTimeout(updateNamesHint,0));
+  document.getElementById('outputNames').addEventListener(evt, ()=>setTimeout(updateNamesHint,0));
+});
+updateNamesHint();
+
+function setStep(stepKey, doneKeys=[]){
+  document.querySelectorAll('.chip-step').forEach(chip=>{
+    chip.classList.remove('active','done');
+    if(doneKeys.includes(chip.dataset.step)) chip.classList.add('done');
+    if(chip.dataset.step===stepKey) chip.classList.add('active');
+  });
+}
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+function segmentWidth(seg, font, size){
+  if(seg.type==='text') return font.widthOfTextAtSize(seg.value, size);
+  if(seg.type==='emoji') return size;
+  if(seg.type==='glyph') return measureGlyphWidthAtSize(seg.value, size, seg.bold);
+  return 0;
+}
+function segmentText(text, fkFont){
+  const segments = [];
+  let segmenter = null;
+  if(typeof Intl !== 'undefined' && Intl.Segmenter){
+    segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
+  }
+  let clusters;
+  if(segmenter){ clusters = Array.from(segmenter.segment(text), s => s.segment); }
+  else { clusters = Array.from(text); }
+  let buffer = ''; let bufferType = null;
+  function flush(){ if(buffer){ segments.push({type:bufferType, value:buffer}); buffer=''; } }
+  clusters.forEach(cluster=>{
+    const cls = classifyCluster(cluster, fkFont);
+    if(cls === 'emoji'){ flush(); segments.push({type:'emoji', value:cluster}); bufferType = null; }
+    else {
+      if(bufferType !== null && bufferType !== cls){ flush(); }
+      bufferType = cls; buffer += cluster;
+    }
+  });
+  flush(); return segments;
+}
+function wrapMixedParagraph(paragraph, font, size, maxWidth, fkFont, bold){
+  if(paragraph.trim()===''){ return [[]]; }
+  const segments = segmentText(paragraph, fkFont);
+  const tokens = [];
+  segments.forEach(seg=>{
+    if(seg.type==='emoji'){ tokens.push({type:'emoji', value:seg.value}); }
+    else if(seg.type==='unsupported'){
+      const words = seg.value.split(/(\s+)/).filter(w=>w.length>0);
+      words.forEach(w=>{
+        if(w.trim()===''){ tokens.push({type:'text', value:w}); }
+        else tokens.push({type:'glyph', value:w, bold});
+      });
+    } else {
+      const words = seg.value.split(/(\s+)/).filter(w=>w.length>0);
+      words.forEach(w=> tokens.push({type:'text', value:w}));
+    }
+  });
+  const lines = []; let currentLine = []; let currentWidth = 0;
+  tokens.forEach(tok=>{
+    const w = segmentWidth(tok, font, size);
+    if(currentWidth + w > maxWidth && currentLine.length>0){
+      lines.push(currentLine); currentLine = []; currentWidth = 0;
+      if(tok.type==='text' && tok.value.trim()===''){ return; }
+    }
+    currentLine.push(tok); currentWidth += w;
+  });
+  if(currentLine.length>0) lines.push(currentLine);
+  return lines;
+}
+function wrapMixedText(text, font, size, maxWidth, fkFont, bold){
+  const paragraphs = text.split('\n');
+  const allLines = [];
+  paragraphs.forEach(p=>{
+    wrapMixedParagraph(p, font, size, maxWidth, fkFont, bold).forEach(l=>allLines.push(l));
+  });
+  return allLines;
+}
+const embeddedEmojiCache = new WeakMap();
+async function embedEmojiOnce(pdfDoc, cluster){
+  let cache = embeddedEmojiCache.get(pdfDoc);
+  if(!cache){ cache = new Map(); embeddedEmojiCache.set(pdfDoc, cache); }
+  if(cache.has(cluster)) return cache.get(cluster);
+  const bytes = await fetchEmojiPng(cluster);
+  if(!bytes){ cache.set(cluster, null); return null; }
+  try{
+    const img = await pdfDoc.embedPng(bytes);
+    cache.set(cluster, img); return img;
+  }catch(e){ cache.set(cluster, null); return null; }
+}
+async function drawMixedLine(pdfDoc, page, tokens, x, y, size, font, color){
+  let cursorX = x;
+  for(const tok of tokens){
+    if(tok.type==='text'){
+      page.drawText(tok.value, {x:cursorX, y, size, font, color});
+      cursorX += font.widthOfTextAtSize(tok.value, size);
+    } else if(tok.type==='emoji'){
+      const img = await embedEmojiOnce(pdfDoc, tok.value);
+      if(img){ page.drawImage(img, {x:cursorX, y: y - size*0.12, width:size, height:size}); }
+      cursorX += size;
+    } else if(tok.type==='glyph'){
+      const rendered = await embedGlyphOnce(pdfDoc, tok.value, tok.bold, color);
+      if(rendered){
+        const scale = size / GLYPH_REF_PX;
+        const w = rendered.textWidthPx * scale;
+        const h = rendered.canvasHeightPx * scale;
+        const drawY = y - (rendered.canvasHeightPx - rendered.baselineYpx) * scale;
+        page.drawImage(rendered.img, {x:cursorX, y:drawY, width:w, height:h});
+        cursorX += w;
+      } else {
+        cursorX += measureGlyphWidthAtSize(tok.value, size, tok.bold);
+      }
+    }
+  }
+}
+async function preEmbedAllEmoji(pdfDoc, ...texts){
+  const clusters = new Set();
+  texts.forEach(t=>{
+    segmentText(t, null).forEach(seg=>{ if(seg.type==='emoji') clusters.add(seg.value); });
+  });
+  await Promise.all(Array.from(clusters).map(c=> embedEmojiOnce(pdfDoc, c)));
+}
+function hexToRgb(hex) {
+  const h = (hex || '#0f172a').replace('#', '');
+  const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
+  const num = parseInt(full, 16);
+  if (isNaN(num)) return rgb(0.06, 0.09, 0.16);
+  return rgb(
+    ((num >> 16) & 255) / 255,
+    ((num >> 8) & 255) / 255,
+    (num & 255) / 255
+  );
+}
+
+/* Fast check: does text need emoji/glyph raster path? */
+function needsMixedRenderer(text) {
+  if (!text) return false;
+  if (EMOJI_TEST.test(text)) return true;
+  return false;
+}
+
+/* True if text has characters beyond WinAnsi (Latin-1) that standard PDF fonts cannot draw.
+   Devanagari / Hindi / other scripts → need Noto. Emoji handled separately via images. */
+function needsCustomFont(text) {
+  if (!text) return false;
+  for (var i = 0; i < text.length; ) {
+    var cp = text.codePointAt(i);
+    i += cp > 0xffff ? 2 : 1;
+    if (cp <= 255) continue; // Latin-1 / WinAnsi
+    // Common punctuation that often appears in docs
+    if (cp === 0x2013 || cp === 0x2014 || cp === 0x2018 || cp === 0x2019 ||
+        cp === 0x201c || cp === 0x201d || cp === 0x2026 || cp === 0x00a0) continue;
+    // Emoji → drawn as PNG, not as font glyphs
+    if (EMOJI_TEST.test(String.fromCodePoint(cp))) continue;
+    return true;
+  }
+  return false;
+}
+
+/* Simple text wrap using pdf-lib font metrics (much faster) */
+function wrapSimpleText(text, font, size, maxWidth) {
+  var paragraphs = String(text || '').split('\n');
+  var lines = [];
+  paragraphs.forEach(function (para) {
+    if (para === '') { lines.push(''); return; }
+    var words = para.split(/(\s+)/);
+    var current = '';
+    words.forEach(function (w) {
+      var test = current + w;
+      if (current && font.widthOfTextAtSize(test, size) > maxWidth) {
+        lines.push(current);
+        current = w.trim() ? w : '';
+      } else {
+        current = test;
+      }
+    });
+    if (current) lines.push(current);
+  });
+  return lines;
+}
+
+async function buildSinglePdf(title, description, titleSize, styleOpts) {
+  var opts = styleOpts || {};
+  var pdfDoc = await PDFDocument.create();
+  var page = pdfDoc.addPage([595.28, 841.89]);
+
+  var bodyColorHex = opts.bodyColor || '#0f172a';
+  var bodyColor = hexToRgb(bodyColorHex);
+  var bodySize = Math.max(8, Math.min(36, opts.bodySize || 11));
+  var isBold = !!opts.isBold;
+  var tSize = Number(titleSize) || 20;
+
+  var margin = 56;
+  var pageWidth = 595.28;
+  var maxWidth = pageWidth - margin * 2;
+  var y = 841.89 - margin;
+  var titleColor = rgb(0.1, 0.1, 0.12);
+
+  var useUnicode = needsCustomFont(title) || needsCustomFont(description);
+  var useMixed = needsMixedRenderer(title) || needsMixedRenderer(description);
+  // Emoji PNG path needs reliable Unicode font metrics; use Noto whenever emoji OR non-Latin is present
+  var useNoto = useUnicode || useMixed;
+
+  var fontRegular, fontBold;
+  var bodyFk = null, titleFk = null;
+
+  if (useNoto) {
+    // Noto with subset — Hindi / emoji / special scripts (sirf used glyphs)
+    var fontData = await loadFonts();
+    ensureFontkitCoverage(fontData.sansBytes, fontData.boldBytes);
+    pdfDoc.registerFontkit(fontkit);
+    fontRegular = await pdfDoc.embedFont(fontData.sansBytes, { subset: true });
+    fontBold = await pdfDoc.embedFont(fontData.boldBytes, { subset: true });
+    bodyFk = isBold ? fkFontBold : fkFontRegular;
+    titleFk = fkFontBold;
+  } else {
+    // Pure Latin, no emoji → standard Helvetica (ZERO font data → bahut chhota PDF)
+    fontRegular = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
+    fontBold = await pdfDoc.embedFont(PDFLib.StandardFonts.HelveticaBold);
+  }
+
+  var bodyFont = isBold ? fontBold : fontRegular;
+
+  if (!useMixed) {
+    // ===== FAST PATH (plain text, no emoji) =====
+    var titleLines = wrapSimpleText(title, fontBold, tSize, maxWidth);
+    for (var ti = 0; ti < titleLines.length; ti++) {
+      if (titleLines[ti]) {
+        page.drawText(titleLines[ti], { x: margin, y: y, size: tSize, font: fontBold, color: titleColor });
+      }
+      y -= tSize * 1.3;
+    }
+    y -= 14;
+
+    var bodyLines = wrapSimpleText(description, bodyFont, bodySize, maxWidth);
+    for (var bi = 0; bi < bodyLines.length; bi++) {
+      if (y < margin + 20) {
+        page = pdfDoc.addPage([595.28, 841.89]);
+        y = 841.89 - margin;
+      }
+      if (bodyLines[bi]) {
+        page.drawText(bodyLines[bi], { x: margin, y: y, size: bodySize, font: bodyFont, color: bodyColor });
+      }
+      y -= bodySize * 1.5;
+    }
+  } else {
+    // ===== MIXED PATH (emoji present) =====
+    await preEmbedAllEmoji(pdfDoc, title, description);
+    var tLines = wrapMixedText(title, fontBold, tSize, maxWidth, titleFk, true);
+    for (var i = 0; i < tLines.length; i++) {
+      await drawMixedLine(pdfDoc, page, tLines[i], margin, y, tSize, fontBold, titleColor);
+      y -= tSize * 1.3;
+    }
+    y -= 14;
+    var bLines = wrapMixedText(description, bodyFont, bodySize, maxWidth, bodyFk, isBold);
+    for (var j = 0; j < bLines.length; j++) {
+      if (y < margin + 20) {
+        page = pdfDoc.addPage([595.28, 841.89]);
+        y = 841.89 - margin;
+      }
+      await drawMixedLine(pdfDoc, page, bLines[j], margin, y, bodySize, bodyFont, bodyColor);
+      y -= bodySize * 1.5;
+    }
+  }
+
+  var bytes = await pdfDoc.save({ useObjectStreams: true });
+  return new Blob([bytes], { type: 'application/pdf' });
+}
+
+/* Track which tabs are currently generating (allows parallel runs) */
+const generatingTabs = new Set();
+
+/* Snapshot form data so generation keeps working even if user switches tabs */
+function snapshotFormData() {
+  var wordRows = [];
+  document.querySelectorAll('#wordRows .word-row').forEach(function (row) {
+    var inputs = row.querySelectorAll('input');
+    if (inputs.length >= 2) {
+      wordRows.push({ find: inputs[0].value, replace: inputs[1].value });
+    }
+  });
+  return {
+    tabId: activeTabId,
+    tabName: (activeTabId && dashboards[activeTabId] && dashboards[activeTabId].tabName) || '',
+    title: (document.getElementById('titleInput') || {}).value || 'Untitled',
+    desc: (document.getElementById('descInput') || {}).value || '',
+    titleSize: (document.getElementById('titleFontSize') || {}).value || '20',
+    originalName: ((document.getElementById('originalName') || {}).value || '').trim(),
+    names: ((document.getElementById('replacementNames') || {}).value || '').split('\n').map(function (s) { return s.trim(); }).filter(Boolean),
+    outNames: ((document.getElementById('outputNames') || {}).value || '').split('\n').map(function (s) { return s.trim(); }).filter(Boolean),
+    numberTargets: (document.getElementById('numberTargets') || {}).value || '',
+    wordRows: wordRows,
+    bodyColor: (document.getElementById('textColor') || {}).value || '#0f172a',
+    bodySize: currentFontSize || 11,
+    isBold: !!(document.getElementById('btnBold') && document.getElementById('btnBold').classList.contains('active'))
+  };
+}
+
+/* Apply word + number replace on a snapshot (does not touch the live form) */
+function applyReplacesOnSnapshot(snap) {
+  var title = snap.title;
+  var desc = snap.desc;
+
+  // Word replace
+  (snap.wordRows || []).forEach(function (row) {
+    if (!row.find) return;
+    var pattern = row.find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    var re = new RegExp(pattern, 'gi');
+    title = title.replace(re, row.replace || '');
+    desc = desc.replace(re, row.replace || '');
+  });
+
+  // Number replace
+  var targets = (snap.numberTargets || '').split('\n').map(function (t) {
+    return t.trim().replace(/\D/g, '');
+  }).filter(Boolean);
+  if (targets.length > 0) {
+    var idx = 0;
+    function replacer(m) {
+      var d = m.replace(/\D/gu, '').length;
+      if (d < 8 || d > 20) return m;
+      var rep = replaceNumberSkeleton(m, targets[idx % targets.length]);
+      idx++;
+      return rep;
+    }
+    title = title.replace(NUMBER_PATTERN, replacer);
+    desc = desc.replace(NUMBER_PATTERN, replacer);
+  }
+
+  snap.title = title;
+  snap.desc = desc;
+  return snap;
+}
+
+/* Progress pill next to Download PDF: "3/10 done" / "7 left" */
+function setPdfProgress(done, total, state) {
+  var pill = document.getElementById('pdfProgressPill');
+  var countEl = document.getElementById('pdfProgressCount');
+  var labelEl = document.getElementById('pdfProgressLabel');
+  if (!pill || !countEl || !labelEl) return;
+
+  if (!total || total <= 0) {
+    pill.classList.remove('visible', 'running', 'done');
+    return;
+  }
+
+  var left = Math.max(0, total - done);
+  countEl.textContent = done + '/' + total;
+  if (state === 'done' || (done >= total && state !== 'running')) {
+    labelEl.textContent = 'done';
+    pill.classList.add('visible', 'done');
+    pill.classList.remove('running');
+    pill.title = total + ' PDF(s) generated';
+  } else {
+    labelEl.textContent = left + ' left';
+    pill.classList.add('visible', 'running');
+    pill.classList.remove('done');
+    pill.title = done + ' generated · ' + left + ' remaining';
+  }
+}
+
+function updateStatusForTab(tabId, headline, meta, counts, stepKey, doneKeys) {
+  // Only update the visible status UI if this tab is currently active
+  if (tabId !== activeTabId) return;
+  if (headline != null) {
+    var h = document.getElementById('batchHeadline');
+    if (h) h.textContent = headline;
+  }
+  if (meta != null) {
+    var m = document.getElementById('batchMeta');
+    if (m) m.textContent = meta;
+  }
+  if (counts != null) {
+    var c = document.getElementById('statusCounts');
+    if (c) c.textContent = counts;
+    // Parse "3/10 generated · 0 failed" → progress pill
+    var m2 = String(counts).match(/(\d+)\s*\/\s*(\d+)/);
+    if (m2) {
+      var done = parseInt(m2[1], 10);
+      var total = parseInt(m2[2], 10);
+      var isReady = stepKey === 'ready' || (doneKeys && doneKeys.indexOf('zipping') >= 0 && stepKey !== 'generating');
+      setPdfProgress(done, total, isReady || done >= total ? 'done' : 'running');
+    }
+  }
+  if (stepKey) setStep(stepKey, doneKeys || []);
+}
+
+async function createPdfsFromSnapshot(snap) {
+  var startTime = performance.now();
+  var baseTitle = snap.title || 'Untitled';
+  var baseDesc = snap.desc || '';
+  var titleSize = snap.titleSize || '20';
+  var originalName = snap.originalName || '';
+  var names = snap.names || [];
+  var outNames = snap.outNames || [];
+  var tabId = snap.tabId;
+  var styleOpts = {
+    bodyColor: snap.bodyColor || '#0f172a',
+    bodySize: snap.bodySize || 11,
+    isBold: !!snap.isBold
+  };
+
+  if (names.length === 0) {
+    alert('Kam se kam ek Replacement Name do (Step 4)');
+    return [];
+  }
+
+  updateStatusForTab(tabId, 'Loading fonts...', null, '0/' + names.length + ' generated · 0 failed', 'processing', ['queued']);
+  if (tabId === activeTabId) setPdfProgress(0, names.length, 'running');
+  await loadFonts();
+  updateStatusForTab(tabId, 'Generating PDFs...', null, '0/' + names.length + ' generated · 0 failed', 'generating', ['queued', 'processing']);
+
+  // Prepare all jobs first (fast, sync)
+  var jobs = [];
+  var totalReplacements = 0;
+  for (var i = 0; i < names.length; i++) {
+    var name = names[i];
+    var outName = (outNames[i] || name.toLowerCase().replace(/\s+/g, '-')).replace(/\.pdf$/i, '') + '.pdf';
+    var title = baseTitle, desc = baseDesc;
+    if (originalName) {
+      var pattern = originalName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      var re = new RegExp(pattern, 'gi');
+      totalReplacements += ((title.match(re) || []).length + (desc.match(re) || []).length);
+      title = title.replace(re, name);
+      desc = desc.replace(re, name);
+    }
+    title = title.split('{name}').join(name);
+    desc = desc.split('{name}').join(name);
+    jobs.push({ title: title, desc: desc, outName: outName, index: i });
+  }
+
+  // Parallel generation with concurrency limit (3 at a time = fast but not freezing browser)
+  var CONCURRENCY = 3;
+  var files = new Array(jobs.length);
+  var generatedCount = 0, failed = 0;
+  var cursor = 0;
+
+  async function worker() {
+    while (cursor < jobs.length) {
+      var myIndex = cursor++;
+      var job = jobs[myIndex];
+      try {
+        var blob = await buildSinglePdf(job.title, job.desc, titleSize, styleOpts);
+        files[myIndex] = { name: job.outName, blob: blob };
+        generatedCount++;
+      } catch (err) {
+        failed++;
+        files[myIndex] = null;
+        console.error('PDF generation failed for', job.outName, err);
+      }
+      updateStatusForTab(
+        tabId, null, null,
+        generatedCount + '/' + names.length + ' generated · ' + failed + ' failed',
+        'generating',
+        ['queued', 'processing']
+      );
+      if (tabId === activeTabId) {
+        setPdfProgress(generatedCount + failed, names.length, 'running');
+      }
+    }
+  }
+
+  var workers = [];
+  for (var w = 0; w < Math.min(CONCURRENCY, jobs.length); w++) {
+    workers.push(worker());
+  }
+  await Promise.all(workers);
+
+  // Compact nulls
+  files = files.filter(function (f) { return f != null; });
+
+  updateStatusForTab(tabId, 'Preparing downloads...', null, generatedCount + '/' + names.length + ' generated · ' + failed + ' failed', 'zipping', ['queued', 'processing', 'generating']);
+  var elapsed = Math.round(performance.now() - startTime);
+  updateStatusForTab(
+    tabId,
+    'Batch ready',
+    totalReplacements + ' name replacements · ' + elapsed + 'ms elapsed',
+    generatedCount + '/' + names.length + ' generated · ' + failed + ' failed',
+    'ready',
+    ['queued', 'processing', 'generating', 'zipping']
+  );
+  if (tabId === activeTabId) {
+    setPdfProgress(generatedCount, names.length, 'done');
+  }
+  return files;
+}
+
+function renderFileList() {
+  var card = document.getElementById('fileListCard');
+  var rows = document.getElementById('fileListRows');
+  if (!card || !rows) return;
+  rows.innerHTML = '';
+  if (!generatedFiles || generatedFiles.length === 0) {
+    card.style.display = 'none';
+    return;
+  }
+  card.style.display = 'block';
+
+  // Update ZIP button label with count
+  var zipBtn = document.getElementById('downloadAllZipBtn');
+  if (zipBtn) {
+    zipBtn.textContent = '⬇️ Download All as ZIP (' + generatedFiles.length + ')';
+    zipBtn.disabled = false;
+  }
+
+  generatedFiles.forEach(function (f) {
+    var url = URL.createObjectURL(f.blob);
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid #bae6fd; gap:10px;';
+    var sizeKb = (f.blob.size / 1024).toFixed(1);
+    row.innerHTML =
+      '<span style="font-size:.82rem;">' + escapeHtml(f.name) +
+      ' <span style="color:var(--muted); font-size:.72rem;">(' + sizeKb + ' KB)</span></span>' +
+      '<a href="' + url + '" download="' + escapeHtml(f.name) +
+      '" class="btn-primary" style="text-decoration:none; padding:6px 14px; font-size:.78rem;">Download</a>';
+    rows.appendChild(row);
+  });
+}
+
+async function downloadFilesAsZip(files, zipName) {
+  if (!files || files.length === 0) return;
+  var zip = new JSZip();
+  files.forEach(function (f) { zip.file(f.name, f.blob); });
+  var zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 1 } });
+  var url = URL.createObjectURL(zipBlob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = zipName || 'docmerge-pdfs.zip';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function () { URL.revokeObjectURL(url); }, 8000);
+  return zipBlob;
+}
+
+/* Download all generated PDFs of the CURRENT tab as one ZIP */
+async function downloadCurrentTabZip() {
+  if (!generatedFiles || generatedFiles.length === 0) {
+    alert('Pehle PDFs generate karo (Generate All button se).');
+    return;
+  }
+  var btn = document.getElementById('downloadAllZipBtn');
+  var statusEl = document.getElementById('convertAllStatus');
+  var oldLabel = btn ? btn.textContent : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '⏳ Zipping...';
+  }
+  if (statusEl) statusEl.textContent = '⏳ Zipping ' + generatedFiles.length + ' PDF(s)...';
+
+  try {
+    var tabName = (activeTabId && dashboards[activeTabId] && dashboards[activeTabId].tabName) || '';
+    var title = (document.getElementById('titleInput') || {}).value || 'batch';
+    var safeName = (tabName || title || 'tab').toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '') || 'batch';
+    var zipName = 'docmerge-' + safeName + '.zip';
+
+    var zipBlob = await downloadFilesAsZip(generatedFiles, zipName);
+    var zipKb = zipBlob ? (zipBlob.size / 1024).toFixed(1) : '?';
+    if (statusEl) {
+      statusEl.textContent = '✅ ' + generatedFiles.length + ' PDF(s) downloaded as ' + zipName + ' (' + zipKb + ' KB)';
+    }
+  } catch (err) {
+    console.error(err);
+    alert('ZIP download failed: ' + err.message);
+    if (statusEl) statusEl.textContent = '⚠️ ZIP failed: ' + err.message;
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = oldLabel || ('⬇️ Download All as ZIP (' + generatedFiles.length + ')');
+    }
+  }
+}
+
+async function convertAll() {
+  // Which tab started this job?
+  var jobTabId = activeTabId;
+  if (!jobTabId) {
+    alert('Koi tab active nahi hai.');
+    return;
+  }
+
+  // Prevent double-click on same tab
+  if (generatingTabs.has(jobTabId)) {
+    alert('Is tab pe pehle se generation chal rahi hai. Doosre tab pe try karo.');
+    return;
+  }
+
+  // Snapshot everything NOW so user can switch tabs freely
+  var snap = snapshotFormData();
+  snap = applyReplacesOnSnapshot(snap);
+
+  if (!snap.names || snap.names.length === 0) {
+    alert('Kam se kam ek Replacement Name do (Step 4)');
+    return;
+  }
+
+  generatingTabs.add(jobTabId);
+
+  // Visual feedback only on this tab's buttons while active
+  var btn = document.getElementById('convertAllBtn');
+  var btn2 = document.getElementById('convertAllBtn2');
+  var statusEl = document.getElementById('convertAllStatus');
+  var originalLabel = btn ? btn.textContent : '';
+
+  function setBusyUI(busy) {
+    // Only affect UI if user is still on the same tab
+    if (activeTabId !== jobTabId) return;
+    if (btn) {
+      btn.disabled = busy;
+      btn.textContent = busy ? '⏳ Converting...' : originalLabel;
+    }
+    if (btn2) btn2.disabled = busy;
+  }
+
+  setBusyUI(true);
+  if (statusEl && activeTabId === jobTabId) {
+    statusEl.textContent = '⏳ Generating PDFs for this tab...';
+  }
+
+  try {
+    var files = await createPdfsFromSnapshot(snap);
+
+    // Save results into the tab that started the job (even if user switched away)
+    if (dashboards[jobTabId]) {
+      dashboards[jobTabId].generatedFiles = files.slice();
+    }
+
+    // If user is still on this tab, update live UI
+    if (activeTabId === jobTabId) {
+      generatedFiles = files.slice();
+      renderFileList();
+    }
+
+    if (files.length > 0) {
+      var safeName = (snap.tabName || snap.title || 'tab').toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '') || 'tab';
+      var zipName = 'docmerge-' + safeName + '.zip';
+      await downloadFilesAsZip(files, zipName);
+
+      if (statusEl && activeTabId === jobTabId) {
+        var zipKb = '?';
+        statusEl.textContent = '✅ Done — ' + files.length + ' PDF(s) downloaded as ' + zipName;
+      }
+    } else {
+      if (statusEl && activeTabId === jobTabId) {
+        statusEl.textContent = '⚠️ Koi PDF generate nahi hui.';
+      }
+      alert('Koi bhi PDF generate nahi ho payi. (Tab: ' + (snap.tabName || jobTabId) + ')');
+    }
+  } catch (err) {
+    console.error(err);
+    if (statusEl && activeTabId === jobTabId) {
+      statusEl.textContent = '⚠️ Kuch galat hua: ' + err.message;
+    }
+    alert('Error: ' + err.message);
+  } finally {
+    generatingTabs.delete(jobTabId);
+    setBusyUI(false);
+    // If user switched back to this tab later, buttons should be free
+    if (activeTabId === jobTabId) {
+      if (btn) { btn.disabled = false; btn.textContent = originalLabel; }
+      if (btn2) btn2.disabled = false;
+    }
+  }
+}
+
+async function downloadSinglePreview(){
+  const title = document.getElementById('titleInput').value || 'Untitled';
+  const desc = document.getElementById('descInput').value || '';
+  const size = document.getElementById('titleFontSize').value;
+  const blob = await buildSinglePdf(title, desc, size);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = (title.toLowerCase().replace(/\s+/g,'-')||'document') + '.pdf'; a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+
+
+</body></html>
